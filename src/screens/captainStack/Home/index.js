@@ -5,13 +5,11 @@ import { inject, observer } from "mobx-react";
 import MapContainer from '../../Map/MapContainer/index';
 import { Container,NativeBaseProvider, } from 'native-base';
 import RNAndroidLocationEnabler from 'react-native-android-location-enabler';
-// import Geolocation from '@react-native-community/geolocation';
 import Geolocation from 'react-native-geolocation-service';
 import db from "../../../database/index" 
 import Modal from 'react-native-modal';
 import io from "socket.io-client";
-import { acc } from 'react-native-reanimated';
-
+ 
 
 export default inject("userStore","generalStore","carStore","tripStore")(observer(Home));
  
@@ -21,7 +19,7 @@ export default inject("userStore","generalStore","carStore","tripStore")(observe
   const {user,authToken,setUser,setcl,cl,Logout,setonline} = props.userStore;
   const {cars,setCars} =  props.carStore;
   const {setrequest,accept,request,getReqById,setatime,setaccept,getreqloader,setgetreqloader,gro,setgro,endride,normalPay} = props.tripStore;
-  const {setLocation,isLocation,isInternet} = props.generalStore;
+  const {setLocation,isLocation,isInternet,appState} = props.generalStore;
   const [loaderT,setloaderT]=useState(false);
   
   
@@ -570,6 +568,8 @@ const UpdateUser=(location,suc,a,e)=>{
     </Modal>
     )
   }
+
+  console.log("app state ",appState)
  
 return(
  <NativeBaseProvider>

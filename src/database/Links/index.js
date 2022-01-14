@@ -2,8 +2,8 @@
 // const link = "https://c0a23827e3e8.ngrok.io/"
 
 //local link
-const links = "http://10.7.148.141:3001/"
-const socket="http://10.7.148.141:3001"
+const links = "http://192.168.10.16:3001/"
+const socket="http://192.168.10.16:3001"
 
 const login = "user/loginCaptain"
 const signup="user/addCaptain"

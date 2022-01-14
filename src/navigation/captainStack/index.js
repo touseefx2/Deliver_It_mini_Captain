@@ -34,7 +34,7 @@ const Drawer  = createDrawerNavigator();
     
         <Drawer.Screen  name="Homes" component={Home_Stack} options={icon.homeIcon}  />
         <Drawer.Screen  name="Captain Portal" component={CaptainPortal_Stack} options={icon.cpIcon}  />
-       <Drawer.Screen  name="Notifications" component={Notification_Stack} options={icon.nIcon}  />
+        <Drawer.Screen  name="Notifications" component={Notification_Stack} options={icon.nIcon}  />
 
          {/*  <Drawer.Screen  name="Change PIN" component={screens.ChangePin} options={icon.pinIcon}  />
         <Drawer.Screen  name="Change Car" component={screens.ChangeCar} options={ icon.carIcon}  />

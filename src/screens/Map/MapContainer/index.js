@@ -2326,8 +2326,7 @@ if(cw!=false && cw!=="f"){
     )
   }
  
-  console.log("tpd ",tpd)
-  console.log("dpd ",dpd)
+ 
   
   return(
   <SafeAreaView style={{flex:1}}>  

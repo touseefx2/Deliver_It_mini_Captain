@@ -1,30 +1,31 @@
-import React  from "react"
-import { View,Text,Image,StyleSheet,TouchableOpacity, ScrollView} from "react-native";
+import React,{useState}  from "react"
+import { View,Text,Image,StyleSheet,TouchableOpacity,ActivityIndicator } from "react-native";
 import { DrawerContentScrollView,DrawerItemList} from '@react-navigation/drawer';
 import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
 import theme from "../../themes/index"; 
 import { inject, observer } from "mobx-react"; 
+import utils from "../../utils/index"
+import LinearGradient from 'react-native-linear-gradient';
 
 export default inject("userStore","generalStore","carStore")(observer(CustomDrawerContent));
  
 function CustomDrawerContent (props) {
-   
- 
+  
   const {user,Logout }=props.userStore;
   const {cars,setCars }=props.carStore;
+
+  const [imgLoad, setimgLoad] = useState(false);
    
 const { state,...rest } = props;
-
 const newState = { ...state}  //copy from state before applying any filter. do not change original state
 // newState.routes = newState.routes.filter(item => (item.name !== 'Logout' && item.name !=="Rate" && item.name !=="Notification")) //replace "Login' with your route name
  
    let  carnum=cars.registration_number
-   
-
+    
    const onClick=(c)=>{
     
      if(c=="logout"){
-      setCars(false) 
+      
       Logout();
      }
 
@@ -36,7 +37,7 @@ const newState = { ...state}  //copy from state before applying any filter. do n
 
 
     return(  
-      <View   style={{flex:1,backgroundColor:theme.color.buttonLinerGC1}} >
+      <LinearGradient colors={[theme.color.buttonLinerGC2,theme.color.buttonLinerGC1]}   style={{flex:1 }} >
 
 <View style={{height:hp("94%")}}>
   
@@ -46,10 +47,16 @@ const newState = { ...state}  //copy from state before applying any filter. do n
 
 <View style={{flexDirection:"row",alignItems:"center"}}>
 
-<View style={{width:90,height:90,borderColor:"white",borderRadius:45,borderWidth:1,backgroundColor:theme.color.buttonLinerGC1,alignItems:"center",justifyContent:"center"}}>
- <Image  style={{width:89,height:89,borderRadius:44}}  source={{uri:user.profile_image}} />
-</View>
 
+ {(!user.profile_image || user.profile_image =="")&&(<utils.vectorIcon.FontAwesome  name="user-circle" color="white" size={90} />)}
+ {(user.profile_image&& user.profile_image!=="")&&(
+ <View style={{width:90,height:90,borderColor:"white",borderRadius:45,borderWidth:1,alignItems:"center",justifyContent:"center"}}>
+ <Image onLoad={()=>{setimgLoad(true)}}  style={{width:89,height:89,borderRadius:44.5}}  source={{uri:user.profile_image}} />
+ {imgLoad==false && <ActivityIndicator size={19} color="white" style={{top:35,position:"absolute"}} />}
+  </View>
+ )}
+
+ 
  
 <View style={{width:"63%",marginLeft:7 }}> 
  <theme.Text numberOfLines={1} ellipsizeMode="tail" style={{fontSize:18,fontFamily:theme.fonts.fontMedium,textTransform:"capitalize",lineHeight:28,color:"white"}}> 
@@ -84,7 +91,7 @@ const newState = { ...state}  //copy from state before applying any filter. do n
                               resizeMode="contain"
                               source={require("../../assets/drawer_items_icon/star.png")}
                               />
-                            <Text style={{fontSize:14,color:"white",marginLeft:30}}>Rate the app</Text>                    
+                            <Text numberOfLines={1} ellipsizeMode="tail" style={{fontSize:14,color:"white",marginLeft:30,lineHeight:20}}>Rate the app</Text>                    
                         </TouchableOpacity>
 
                         <TouchableOpacity 
@@ -95,7 +102,7 @@ const newState = { ...state}  //copy from state before applying any filter. do n
                               resizeMode="contain"
                               source={require("../../assets/drawer_items_icon/exit.png")}
                               />
-                            <Text style={{fontSize:14,color:"white",marginLeft:30}}>Sign out</Text>                    
+                            <Text numberOfLines={1} ellipsizeMode="tail" style={{fontSize:14,color:"white",marginLeft:30,lineHeight:20}}>Sign out</Text>                    
                         </TouchableOpacity>
   
   </View>
@@ -115,7 +122,7 @@ const newState = { ...state}  //copy from state before applying any filter. do n
    
         
 
-        </View>
+        </LinearGradient>
                                    );
                                
 
@@ -124,15 +131,13 @@ const newState = { ...state}  //copy from state before applying any filter. do n
 
 const styles = StyleSheet.create({
                                   
-   
-  image:{width:104,height:99},
   name:{fontSize:15.5,fontWeight:"bold",color:"white",textTransform:"capitalize"},
   drawerItem:{ 
   flexDirection: 'row',
   width: '100%',
   height: 50,
   alignItems: 'center',
-  paddingLeft: 15}
+  paddingHorizontal:20}
 })
 
  

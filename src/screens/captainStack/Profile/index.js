@@ -1,5 +1,5 @@
 import React ,{useEffect,useRef,useState} from 'react';
-import {Image,SafeAreaView,View,Text,ScrollView} from 'react-native';
+import {Image,SafeAreaView,View,Text,ScrollView,ActivityIndicator} from 'react-native';
 import { TextInput,Button } from 'react-native-paper';
 import utils from "../../../utils/index"
 import LinearGradient from 'react-native-linear-gradient';
@@ -8,13 +8,11 @@ import { inject, observer } from "mobx-react";
 import MapContainer from '../../Map/MapContainer/index';
 import { Container,NativeBaseProvider } from 'native-base';
 import RNAndroidLocationEnabler from 'react-native-android-location-enabler';
-import Geolocation from '@react-native-community/geolocation';
 import theme  from "../../../themes/index";
 import ConnectivityManager from 'react-native-connectivity-status'
 import styles from "./styles"
 import { formatDistance, subDays ,startOfWeek,endOfWeek} from 'date-fns'
 import moment from 'moment';
-
  
 export default inject("userStore","generalStore","carStore","tripStore")(observer(Profile));
  
@@ -28,14 +26,24 @@ export default inject("userStore","generalStore","carStore","tripStore")(observe
   const {setLocation,isLocation,isInternet} = props.generalStore;
 
 
- 
+  const [imgLoad, setimgLoad] = useState(false);
+   
   const [loader,setloader]=useState(false);
  
 
   const renderPic=()=>{
     return(
       <View style={{width:"100%",padding:5,alignItems:"center",justifyContent:"center"}}>
-     <Image source={{uri:user.profile_image}}  style={{width:130,height:130,borderRadius:65}} />
+     
+  {(!user.profile_image || user.profile_image =="")&&(<utils.vectorIcon.FontAwesome  name="user-circle" color="white" size={120} />)}
+ {(user.profile_image&& user.profile_image!=="")&&(
+ <View style={{width:120,height:120,borderColor:theme.color.buttonLinerGC1,borderRadius:60,borderWidth:1,alignItems:"center",justifyContent:"center"}}>
+ <Image onLoad={()=>{setimgLoad(true)}}  style={{width:119,height:119,borderRadius:59.5}}  source={{uri:user.profile_image}} />
+ {imgLoad==false && <ActivityIndicator size={25} color={theme.color.buttonLinerGC1} style={{top:55,position:"absolute"}} />}
+  </View>
+ )}
+
+
      <theme.Text numberOfLines={1} ellipsizeMode="tail" style={{fontSize:20,color:"black",fontFamily:theme.fonts.fontMedium,lineHeight:30,width:"95%",backgroundColor:"white",textAlign:"center",marginTop:10}}>{user.fullname}</theme.Text>
       </View>
     )

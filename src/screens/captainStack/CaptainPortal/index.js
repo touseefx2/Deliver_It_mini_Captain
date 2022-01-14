@@ -8,7 +8,6 @@ import { inject, observer } from "mobx-react";
 import MapContainer from '../../Map/MapContainer/index';
 import { Container,NativeBaseProvider } from 'native-base';
 import RNAndroidLocationEnabler from 'react-native-android-location-enabler';
-import Geolocation from '@react-native-community/geolocation';
 import theme  from "../../../themes/index";
 import ConnectivityManager from 'react-native-connectivity-status'
 import styles from "./styles"
