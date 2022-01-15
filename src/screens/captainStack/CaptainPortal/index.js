@@ -705,6 +705,26 @@ return(
     </View>
   )
 }
+
+const renderNoDataErr=()=>{
+  return  (
+    <View style={{flexDirection:"row",marginTop:110,alignItems:"center",alignSelf:"center"}}>
+    <utils.vectorIcon.Foundation name="page-doc"  size={20} color={"grey"} />
+    <Text style={{color:"grey",fontSize:15,alignSelf:"center",marginLeft:15,top:2.5}}>No Record Found !</Text>
+     </View>
+  )
+}
+
+const renderDataLoadeErr=()=>{
+  return  (
+    <View style={{marginTop:"60%"}}>
+    <Text style={{color:"grey",fontSize:15,alignSelf:"center",marginBottom:5}}>Data not load !</Text>
+    <TouchableOpacity   onPress={()=>{ if(generalmanager.internet){setrefresh(true)}else{utils.AlertMessage("","Please connect internet !")} }}>
+    <Text  style={{color:"red",fontSize:15,textDecorationLine:"underline",alignSelf:"center"}}>Retry</Text>
+    </TouchableOpacity>
+    </View>
+  )
+  }
  
 if(portal&&total){
 
@@ -738,26 +758,24 @@ completionRate=cr
   return(
  <SafeAreaView style={styles.container}>
  <utils.DrawerHeader p={props} title="" />
+ 
  {!isInternet && !isserverErr && !loader  && trip!=false && <utils.TopMessage msg="No internet connection ! "/> } 
  {!isInternet && !isserverErr && (!trip) && !loader && renderInternetErr()} 
+
  <ScrollView showsVerticalScrollIndicator={false}   >
  {renderTitle()}
  {renderCycle()}
  {renderGeneralDetail()}
+
 {isserverErr   && !loader && renderServerErr()}
+{!loader  &&  !trip && !isserverErr && isInternet && renderDataLoadeErr()}
+{!loader && trip &&  trip.length <=0 && !isserverErr && renderNoDataErr()}
 {loader && <ActivityIndicator style={{marginTop:100,alignSelf:"center"}} size={25} color={theme.color.buttonLinerGC1} />}
 
 {!loader && trip && trip.length>0 && portal && total && !isserverErr &&(
    <View>
  {rendertripPayDetail()}
  {rendertripDetail()}
-   </View>
- )}
-
-  {!loader && trip && trip.length <=0 && !isserverErr &&(
-   <View style={{flexDirection:"row",marginTop:110,alignItems:"center",alignSelf:"center"}}>
-  <utils.vectorIcon.Foundation name="page-doc"  size={20} color={"grey"} />
-  <Text style={{color:"grey",fontSize:15,alignSelf:"center",marginLeft:15,top:2.5}}>No Record Found !</Text>
    </View>
  )}
 

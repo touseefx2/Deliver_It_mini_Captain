@@ -18,20 +18,20 @@ export default inject("userStore","generalStore")(observer(App));
  function App(props)  {
 
   const RootStack = createStackNavigator();
-  
+ 
   const {user,loader} =  props.userStore;
   const {setLocation,setInternet,setdeviceApi,setappState,isInternet} =  props.generalStore;
-
-
-  const handleConnectivityChange = (state) => {
-    setInternet(state.isConnected)
-	  };
+  
  
-  const handleChange = (newState) => {
-    setappState(newState)
-  }
 
 useEffect(async () => {
+  
+  const unsubscribe = NetInfo.addEventListener(state => {
+    console.log("Connection type", state.type);
+    console.log("Is connected?", state.isConnected);
+    setInternet(state.isConnected)
+  });
+  
   GlobalFont.applyGlobal(theme.fonts.fontNormal) 
    const locationServicesAvailable = await ConnectivityManager.areLocationServicesEnabled();
    setLocation(locationServicesAvailable)
@@ -42,14 +42,14 @@ useEffect(async () => {
         break;
     }
     })
-    NetInfo.addEventListener(handleConnectivityChange);
+   
     setappState("active")
     AppState.addEventListener('change', handleChange); 
     DeviceInfo.getApiLevel().then((apiLevel) => {setdeviceApi(apiLevel)});
 
   return () => {
-     connectivityStatusSubscription.remove();
-     unsubscribe();
+    //  connectivityStatusSubscription.remove();
+      // unsubscribe()
      AppState.removeEventListener('change', handleChange);
   }
   

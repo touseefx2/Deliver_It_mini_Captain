@@ -6,7 +6,7 @@ buildscript {
      googlePlayServicesVersion =   "+"   
     firebaseMessagingVersion =   "21.1.0"
  supportLibVersion = "29.0.0"
- 
+ androidXCore = "1.7.0"
         buildToolsVersion = "29.0.3"
         minSdkVersion = 21
         compileSdkVersion = 29

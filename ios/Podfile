@@ -26,6 +26,8 @@ target 'DeleiverItC' do
 
   pod 'rn-fetch-blob', :path => '../node_modules/rn-fetch-blob'
 
+  pod 'react-native-netinfo', :path => '../node_modules/@react-native-community/netinfo'
+
   target 'DeleiverItCTests' do
     inherit! :complete
     # Pods for testing

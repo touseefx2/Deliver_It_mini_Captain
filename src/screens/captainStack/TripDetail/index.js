@@ -38,8 +38,7 @@ import db from "../../../database/index"
   const {setrequest,accept,request,getReqById,setatime,setaccept,getreqloader,setgetreqloader,gro,setgro,endride} = props.tripStore;
   const {setLocation,isLocation,isInternet} = props.generalStore;
 
-
-
+ 
   const [dispute,setdispute]=useState("null")
   const [getdispOnce,setgetdispOnce]=useState(false);
   
@@ -229,8 +228,7 @@ const getDispute=()=>{
         setdispute("null");
         return;
        }
-  
-  
+   
        if(response.data){  
         getTransaction()
         
@@ -1056,22 +1054,42 @@ const renderServerErr=()=>{
    </View>
  )
 }
+
+const renderDataLoadeErr=()=>{
+  return  (
+    <View style={{marginTop:"60%"}}>
+    <Text style={{color:"grey",fontSize:15,alignSelf:"center",marginBottom:5}}>Data not load !</Text>
+    <TouchableOpacity   onPress={()=>{ if(generalmanager.internet){setrefresh(true)}else{utils.AlertMessage("","Please connect internet !")} }}>
+    <Text  style={{color:"red",fontSize:15,textDecorationLine:"underline",alignSelf:"center"}}>Retry</Text>
+    </TouchableOpacity>
+    </View>
+  )
+  }
+
+  console.log("d ",dispute)
+  console.log("se ",isserverErr)
  
   return(
  <SafeAreaView style={styles.container}>
    {renderDiputeModal()}
   <utils.Loader  loader={l} />
-  {!isInternet && !isserverErr && (dispute=="null") && !l && renderInternetErr()} 
  <utils.StackHeader p={props} title="Trip Detail" /> 
- {!isInternet && !isserverErr && !l  && dispute!=="null" && <utils.TopMessage msg="No internet connection ! "/> } 
- <ScrollView style={{}}>
- {isserverErr   && !l && renderServerErr()}
- {!l && dispute!="null"  && !isserverErr &&(
+
+ {!isInternet && !isserverErr && (dispute=="null"||dispute.length<=0) && !l && renderInternetErr()} 
+ {!isInternet && !isserverErr && !l  && (dispute!="null"||dispute.length<=0) && <utils.TopMessage msg="No internet connection ! "/> } 
+
+ <ScrollView>
+
+ {isserverErr  && !l && renderServerErr()}
+ {/* {!l  && dispute=="null" && !isserverErr &&  isInternet && renderDataLoadeErr()} */}
+ {!l  &&  dispute!="null"   && !isserverErr &&(
   <View style={{padding:10}}> 
  {renderdetail()}   
  </View>
  )}
+
  </ScrollView>
+
  <View style={{padding:10}}>
  {!l && dispute!="null"  && !isserverErr && renderButton()}
  </View>
