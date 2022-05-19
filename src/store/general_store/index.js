@@ -1,36 +1,32 @@
-import { observable,makeObservable,action } from "mobx";
- 
-  
-export default  class  generalstore {
+import { observable, makeObservable, action } from "mobx";
+import { AppState } from "react-native";
 
-constructor(){
-    makeObservable(this) 
+export default class generalstore {
+  constructor() {
+    makeObservable(this);
   }
- 
-  @observable  isInternet= false 
-  @observable  isLocation= false
-  @observable  deviceApi="" 
-  @observable  appState="" 
-  
- 
-  @action setInternet =(obj)=>{ 
-    this.isInternet=obj
-   }
 
-   @action setLocation =(obj)=>{ 
-    this.isLocation=obj
-   }
+  @observable isInternet = false;
+  @observable isLocation = false;
+  @observable apiLevel = "";
+  @observable appState = AppState.currentState;
 
-   @action setdeviceApi =(obj)=>{ 
-    this.deviceApi=obj
-   }
+  @action setInternet = (obj) => {
+    this.isInternet = obj;
+  };
 
-   @action setappState =(obj)=>{ 
-    this.appState=obj
-   }
-  
+  @action setLocation = (obj) => {
+    this.isLocation = obj;
+  };
+
+  @action setdeviceApi = (obj) => {};
+
+  @action.bound
+  setapiLevel(val) {
+    this.apiLevel = val;
+  }
+
+  @action setappState = (obj) => {
+    this.appState = obj;
+  };
 }
- 
-  
- 
- 

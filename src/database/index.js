@@ -1,6 +1,7 @@
-import link from  "./Links/index"
-import api from   "./Api/index";
+import link from "./Links/index";
+import api from "./Api/index";
 
-export default db={
-    link,api
-}
+export default db = {
+  link,
+  api,
+};

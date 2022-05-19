@@ -1,414 +1,1439 @@
-import React ,{useEffect,useState} from 'react';
-import {TouchableOpacity,View,KeyboardAvoidingView,ScrollView ,Text,BackHandler} from 'react-native';
-import {Layout} from '@ui-kitten/components';
-import styles from './styles';
-import theme from "../../themes/index"
-import utils from "../../utils/index"
-import LinearGradient from 'react-native-linear-gradient';
-import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
-import GVs from '../../stores/Global_Var';
-import ToggleSwitch from 'toggle-switch-react-native'
-import { inject, observer } from "mobx-react"; 
-import db from "../../database/index" 
-import utilsS from "../../utilsS/index"
-import Modal from 'react-native-modal';
+import React, { useEffect, useState, useRef } from "react";
+import {
+  TouchableOpacity,
+  View,
+  KeyboardAvoidingView,
+  ScrollView,
+  Text,
+  Image,
+  BackHandler,
+  ActivityIndicator,
+  SafeAreaView,
+  Modal as MModal,
+  TextInput,
+  Platform,
+  Alert,
+  Keyboard,
+} from "react-native";
+import {
+  responsiveFontSize,
+  responsiveHeight,
+  responsiveWidth,
+} from "react-native-responsive-dimensions";
+import { Layout } from "@ui-kitten/components";
+import styles from "./styles";
+import LinearGradient from "react-native-linear-gradient";
+import ToggleSwitch from "toggle-switch-react-native";
+import { inject, observer } from "mobx-react";
+import utils from "../../utils/index";
+// import theme from "../../themes/index";
+import userStore from "../../store/index";
+import theme from "../../theme/index";
+import Message from "../../theme/message";
+import MultipleImagePicker from "@baronha/react-native-multiple-image-picker";
+import DropDown from "../../theme/DropDown";
+import AntDesign from "react-native-vector-icons/AntDesign";
+import Entypo from "react-native-vector-icons/Entypo";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
+export default inject(
+  "userStore",
+  "generalStore",
+  "carStore"
+)(observer(SelectCar));
 
-export default inject("userStore","generalStore","carStore")(observer(SelectCar));
+function SelectCar(props) {
+  const { isInternet, apiLevel } = props.generalStore;
+  const { user, authToken, Logout, setUser, setonline } = props.userStore;
+  const {
+    setCars,
+    cars,
+    brand,
+    vType,
+    allcarNames,
+    UploadeImages,
+    loading,
+    images_uploaded,
+    imgUploadCount,
+  } = props.carStore;
 
-function SelectCar (props)   {
+  console.log("brnds : ", brand);
 
- 
-const {isInternet}   =  props.generalStore;
-const {user,authToken,Logout,setUser,setonline} =  props.userStore;
-const {setCars,cars} =  props.carStore;
+  const [loader, setloader] = useState(false);
+  const [isaddcarModalVisible, setisaddcarModalVisible] = useState(false);
+  const [activeChecked, setActiveChecked] = useState(true);
 
-const [car, setCar] = useState("a");
+  let maxCarPhotos = 5;
+  let minCarPhotos = 3;
+  let maxBookPhotos = 2;
+  let minBookPhotos = 1;
 
-const [loader, setloader] = useState(false);
-const [isModalVisible, setModalVisible] = useState(false);
+  const [isDropDownMake, setisDropDownMake] = useState(false);
+  const [isDropDownName, setisDropDownName] = useState(false);
+  const [isDropDownModal, setisDropDownModal] = useState(false);
+  const [isDropDownType, setisDropDownType] = useState(false);
 
-const [activeChecked, setActiveChecked] = useState(true);
+  const [pvm, setpvm] = useState(false); //show fulll image modal
+  const [pv, setpv] = useState(""); //photo view
+  const [imgLoadd, setimgLoadd] = useState(false);
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [photo, setphoto] = useState([]); //car photos
+  const [selectedMake, setSelectedMake] = useState([]);
+  const [car, setCar] = useState([]);
 
- const onActiveCheckedChange = (isChecked) => {
-   setActiveChecked(isChecked);
- };
- 
- useEffect(() => {
-   if(isInternet){
-    getCar();
-   }
- }, [isInternet])
- 
- const getCar=()=>{
-  setloader(true);
-  let uid=user._id
-  const bodyData=false
-  const header=authToken;
- 
-  // method, path, body, header
-  db.api.apiCall("get",db.link.getCar+uid,bodyData,header)
-  .then((response) => {
-	       setloader(false);
-         console.log("Get car response : " , response);
-    
-         if(!response.data){
-          setCar(false);
-          // utils.AlertMessage("",response.message) ;
-          return;
-         }
+  const [type, settype] = useState([]);
+  const [color, setcolor] = useState("");
+  const [inValidType, setinValidType] = useState(false);
+  const [inValidColor, setinValidColor] = useState(false);
+  const [model, setModel] = useState([]);
+  const [IsEmptyphoto, setIsEmptyphoto] = useState(false);
+  const [c, setC] = useState(false); //for rerendering in array update
+  const [book, setBook] = useState([]); //book photos
+  const [IsEmptyBook, setIsEmptyBook] = useState(false);
+  const [inValidCar, setinValidCar] = useState(false);
 
+  const [inValidMake, setInvalidMake] = useState(false);
+  const [regNo, setRegNo] = useState("");
 
-         if(response.data){
-           setCar(response.data[0]);
-           return;
-         }
-      
- 
-  }).catch((e) => {
-     setloader(false);
-     setCar("e")
-    //  utilsS.AlertMessage("","Network request failed");
-     console.error("Get car catch error : ", e)
-    return;
-  })
+  const [isEmptyRegNo, setisEmptyRegNo] = useState(false);
+  const [inValidRegNo, setinValidRegNo] = useState(false);
+  const [engine, setEngine] = useState("");
+  const [seating, setSeating] = useState("");
+  const [inValidEngine, setinValidEngine] = useState(false);
 
- }
+  const [inValidSeating, setinValidSeating] = useState(false);
+  const [transmission, setTransmission] = useState("auto");
+  const [emptyFeature, setEmptyFeature] = useState(false);
+  const [featureList, setFeatureList] = useState([]);
+  const [brandList, setBrandList] = useState(brand);
+  const [carsList, setCarsList] = useState([]);
+  const [typeList, settypeList] = useState(vType);
 
- const onLogout=()=>{
-  setCars(false) 
-  Logout();
- }
- 
-  const renderOptin=()=>{
-    return(
-      <View style={{marginTop:15,backgroundColor:theme.color.mainColor,elevation:5,padding:10,borderRadius:4,flexDirection:"row",alignItems:"center",justifyContent:"space-between"}}>
+  const [yearList, setYearList] = useState([]);
 
-<utils.vectorIcon.FontAwesome5 name="car" color="black" size={35} />
- 
- <View style={{width:"70%"}}>
- <theme.Text numberOfLines={1} ellipsizeMode="tail" style={{fontSize:16,color:"black",fontFamily:theme.fonts.fontMedium,lineHeight:20}}> 
-Opt-in
- </theme.Text>
- <theme.Text numberOfLines={1} ellipsizeMode="tail" style={{fontSize:13,color:theme.color.mainPlaceholderColor,lineHeight:20}}> 
-Enable to get more bookings
- </theme.Text>
- </View>
-       
- <ToggleSwitch
-  isOn={activeChecked}
-  onColor="#35cf2d"
-  offColor="silver"
-  size="small"
-  onToggle={(t)=>onActiveCheckedChange(t)}
-/>
- 
-      </View>
-    )
-  }
+  useEffect(() => {
+    setBrandList(brand);
+  }, [brand]);
 
-  const renderButton=()=>{
-    return(
-      <TouchableOpacity disabled={loader} onPress={()=>{setModalVisible(true)}} style={styles.BottomButton}>
-  		<LinearGradient colors={[theme.color.buttonLinerGC1,theme.color.buttonLinerGC2]} style={styles.LinearGradient}>
-  			  		<View style={styles.ButtonRight}>
-             <Text style={styles.buttonText}>Continue</Text> 
- 			      	</View>
- 			</LinearGradient>
- 			</TouchableOpacity>
-    )
-  }
+  useEffect(() => {
+    settypeList(vType);
+  }, [vType]);
 
-  const UpdateUseracptTerm=()=>{
-    setloader(true)
-    
-    //update user
-      let uid= user._id
-      const bodyData=false
-      const header= authToken;
-     
-       // method, path, body, header
-       db.api.apiCall("put",db.link.updateTerms+uid,bodyData,header )
-      .then((response) => {
-           
-        console.log("Update user termacpt response : " , response);
-        
-          if(response.data){
-             UpdateUser()
-             return;
-             }
-    
-             if(!response.data){
-               setloader(false)
-               utilsS.AlertMessage("",response.message);
-               return
-              }
-
-            setloader(false)
-            return
-     
-      }).catch((e) => {
-         setloader(false)
-         utilsS.AlertMessage("","Network request failed");
-         console.error("Update user termacpt catch error : ", e)
-        return;
-      })
-
-
-    
-      }
-
-      const UpdateUser =()=>{
-         
-        //update user
-          let uid= user._id
-          const bodyData={is_online:activeChecked}
-          const header= authToken;
-         
-           // method, path, body, header
-           db.api.apiCall("put",db.link.updateUser+uid,bodyData,header )
-          .then((response) => {
-               
-            console.log("Update user  response : " , response);
-            
-                if(response.data){
-                  setModalVisible(false)
-                  setloader(false)
-                  setUser(response.data)
-                  setonline(response.data.is_online)
-                  setCars(car)
-                  return
-                  }
-        
-                 if(!response.data){
-                   setloader(false)
-                   utilsS.AlertMessage("",response.message)
-                   return
-                  }
-    
-                setloader(false)
-                return
-         
-          }).catch((e) => {
-             setloader(false)
-             utilsS.AlertMessage("","Network request failed");
-             console.error("Update user   catch error : ", e)
-            return;
-          })
-    
-    
-        
+  useEffect(() => {
+    if (isaddcarModalVisible) {
+      setTimeout(() => {
+        const thisYear = new Date().getFullYear();
+        let c = [];
+        for (let i = 0; i <= 10; i++) {
+          const year = thisYear - i;
+          const obj = {
+            _id: i,
+            title: year,
+          };
+          c.push(obj);
+          if (i == 0) {
+            setModel(obj);
           }
+        }
+        setYearList(c);
+      }, 150);
+    } else {
+      setSelectedMake([]);
+      setCarsList([]);
+      setYearList([]);
+      setCar([]);
+      settype([]);
+      setRegNo("");
+      setEngine("");
+      setSeating("");
+      setTransmission("auto");
+      setphoto([]);
+      setBook([]);
+      clearAll();
+    }
+  }, [isaddcarModalVisible]);
 
-  const AcceptTerms=()=>{
-    if(!isInternet){
-          utils.AlertMessage("","Please connect internet !")
-         }
-     else{
-          UpdateUseracptTerm()
-         }
- 
-  }
+  const goback = () => {
+    setisaddcarModalVisible(false);
+  };
+  const addCar = () => {
+    Keyboard.dismiss();
+    closeAllDropDown();
 
- const  renderShowCar=()=>{
- 
-  return(
-    
-    <View style={{marginTop:20}}>
+    if (type.length <= 0) {
+      setinValidType(true);
+      return;
+    }
 
-  <View style={{backgroundColor:theme.color.mainColor,padding:7,borderRadius:4,flexDirection:"row",alignItems:"center"}}>
-     
-  <utils.vectorIcon.Ionicons name="ios-car-sport-outline" color="black" size={70} />
- 
- <View style={{width:"80%",marginLeft:10}}> 
- <theme.Text numberOfLines={1} ellipsizeMode="tail" style={{fontSize:17,color:"black",fontFamily:theme.fonts.fontMedium,textTransform:"capitalize",lineHeight:20}}> 
-{car.car_name.name || "-----"}
- </theme.Text>  
- <theme.Text numberOfLines={1} ellipsizeMode="tail" style={{fontSize:15,color:theme.color.mainPlaceholderColor,textTransform:"capitalize",lineHeight:20}}> 
-  {car.registration_number}
- </theme.Text>
- <theme.Text numberOfLines={1} ellipsizeMode="tail" style={{fontSize:15,color:theme.color.mainPlaceholderColor,textTransform:"capitalize",lineHeight:20}}> 
-  {car.type.type}
- </theme.Text>
- </View>
- 
- </View>
+    if (selectedMake.length <= 0) {
+      setInvalidMake(true);
+      return;
+    }
+    if (car.length <= 0) {
+      setinValidCar(true);
+      return;
+    }
 
+    if (color == "") {
+      setinValidColor(true);
+      return;
+    }
 
+    if (regNo.trim().length == 0) {
+      setisEmptyRegNo(true);
+      return;
+    }
+    console.log("reg : ", regNo);
 
- </View>
-    )
-  }
-  
-  const renderTermsModal=()=>{
-    return(
-     <Modal isVisible={isModalVisible}
-     backdropOpacity={0.6}
-     animationIn="fadeInUp"
-     animationOut="fadeOutDown"
-     animationInTiming={1200}
-     animationOutTiming={1200}
-     backdropTransitionInTiming={600}
-     backdropTransitionOutTiming={600}
-     onRequestClose={() => { setModalVisible(!isModalVisible) }}
-  >
- 
-     <View style=
-     {{
-     flex:1,
-     backgroundColor:"white", 
-     padding:10,
-     height:hp("100%"), 
-     width:wp('95%'), 
-     alignSelf: 'center'
-     }}>
- 
- <ScrollView>
- 
- <theme.Text style={{fontSize:28,fontFamily:theme.fonts.fontMedium,color:"black"}}> 
-      Terms of use
-  </theme.Text> 
- 
-   <theme.Text  style={{fontSize:14,color:theme.color.mainPlaceholderColor}}> 
-      You need to read and accept DeliverIt terms and conditions before you start driving
-   </theme.Text> 
- 
- 
-   <theme.Text style={{fontSize:22,fontFamily:theme.fonts.fontMedium,color:"black",alignSelf:"center",marginTop:20}}> 
-      DeliverIt Captain Terms Of Use
-  </theme.Text>
- 
- 
-  <theme.Text  style={{fontSize:14,color:"black",marginTop:20,lineHeight:25}}> 
- 
- Uber acquired substantially all the assets of Careem Inc a company with its registered office at P.O. Box 146, Road Town, Tortola, British Virgin Islands (Registration number 1723752) in January 2020. Careem Networks FZ LLC (subsidiary of Careem Inc) with its registered office at Shatha Tower, Dubai Media City, P. O. Box. 50024, Dubai, United Arab Emirates and its subsidiaries (excluding Qatar, Morocco, and Palestine which remain part of the Careem Inc group until they are transferred) now form part of the Uber group of companies which collectively are defined as (“Careem”, “we”, “us” or “our”), and by which expression includes Careem’s relevant legal representatives, administrators, successors-in-interest, permitted assigns and affiliates (“Affiliates”).
- 
- These terms of service constitute a legally binding agreement (the “Agreement”) between you and your local Careem entity.
- 
- This Agreement governs your use of the Careem application, website, call centre and technology platform (collectively, the “Careem Platform”). Generally, the right to operate the Careem Platform is licensed by Careem to its relevant Affiliates, and the relevant Affiliate in your jurisdiction provides you the right to access and use the Careem Platform in your jurisdiction.
- 
- PLEASE READ THIS AGREEMENT CAREFULLY BEFORE ACCESSING OR USING THE CAREEM PLATFORM. IF YOU DO NOT AGREE TO BE BOUND BY THE TERMS AND CONDITIONS OF THIS AGREEMENT, YOU MAY NOT USE OR ACCESS THE CAREEM PLATFORM.
- 
- Your access and use of the Careem Platform constitutes your agreement to be bound by this Agreement, which establishes a contractual relationship between you and Careem. Careem may immediately terminate this Agreement with respect to you, or generally cease offering or deny access to the Careem Platform or any portion thereof, at any time for any reason without notice.
- 
- Supplemental terms may apply to certain Services (as defined below), such as policies for a particular event, loyalty programme, activity or promotion, and such supplemental terms will be disclosed to you in connection with the applicable Services. Supplemental terms are in addition to, and shall be deemed a part of, this Agreement for the purposes of the applicable Services. Supplemental terms shall prevail over this Agreement in the event of a conflict with respect to the applicable Services.
- 
- Careem may amend this Agreement from time to time. Amendments will be effective upon Careem’s posting of an updated Agreement at this location or the amended policies or supplemental terms on the applicable Service. Your continued access or use of the Careem Platform after such posting constitutes your consent to be bound by this Agreement, as amended.
- 
- 
-   </theme.Text> 
- 
- </ScrollView>
-       
- {renderAccepttermsButton()}
- 
- 
-     </View>
-   </Modal>
-    )
-  }
+    if (engine.trim().length == 0) {
+      setinValidEngine(true);
+      return;
+    }
+    if (seating.trim().length == 0) {
+      setinValidSeating(true);
+      return;
+    }
+    // let f = [];
+    // featureList.map(item => {
+    //   if (item.added) {
+    //     f.push(item.id);
+    //   }
+    // });
+    // if (f.length <= 0) {
+    //   setEmptyFeature(true);
+    //   return;
+    // }
 
-  const renderAccepttermsButton=()=>{
-    return(
-     <TouchableOpacity onPress={()=>{AcceptTerms()}} style={styles.BottomButtona}>
-       <LinearGradient colors={[theme.color.buttonLinerGC1,theme.color.buttonLinerGC2]} style={styles.LinearGradienta}>
-               <View style={styles.ButtonRight}>
-             <Text style={styles.buttonText}>Accept</Text> 
-             
-                </View>
+    if (photo.length <= 0 || photo.length < minCarPhotos) {
+      setIsEmptyphoto(true);
+      return;
+    }
+
+    if (book.length <= 0 || book.length < minBookPhotos) {
+      setIsEmptyBook(true);
+      return;
+    }
+    let modifiedCarName = `${selectedMake.name} ${car.name} - ${model.title} ( ${regNo} )`;
+
+    UploadeImages(
+      type,
+      selectedMake,
+      car,
+      color,
+      model,
+      regNo,
+      engine,
+      seating,
+      transmission,
+      photo,
+      book,
+      modifiedCarName,
+      goback
+    );
+  };
+
+  const clearAll = () => {
+    let c = false;
+    setinValidCar(c);
+    setinValidEngine(c);
+    setinValidRegNo(c);
+    setinValidSeating(c);
+    setInvalidMake(c);
+    setEmptyFeature(c);
+    setIsEmptyBook(c);
+    setIsEmptyphoto(c);
+    setisEmptyRegNo(c);
+    setinValidType(c);
+    setinValidColor(c);
+  };
+
+  const renderFullImage = () => {
+    return (
+      <MModal
+        transparent
+        visible={pvm}
+        onRequestClose={() => {
+          setpvm(false);
+          setpv("");
+        }}
+      >
+        <View style={{ flex: 1, backgroundColor: "black" }}>
+          <Image
+            onLoadStart={() => setimgLoadd(false)}
+            onLoad={() => {
+              setimgLoadd(true);
+            }}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              bottom: 0,
+              right: 0,
+            }}
+            resizeMode="contain"
+            source={{ uri: pv }}
+          />
+
+          {!imgLoadd && (
+            <ActivityIndicator
+              size={40}
+              color={"blue"}
+              style={{
+                top: "50%",
+                left: "50%",
+                right: "50%",
+                bottom: "50%",
+                position: "absolute",
+              }}
+            />
+          )}
+
+          <TouchableOpacity
+            onPress={() => {
+              setpvm(!pvm);
+              setpv("");
+            }}
+            style={styles.fullImageModalCross}
+          >
+            <Entypo name="cross" color="white" size={35} />
+          </TouchableOpacity>
+        </View>
+      </MModal>
+    );
+  };
+
+  const MultipleImage = async (chk) => {
+    Keyboard.dismiss();
+    closeAllDropDown();
+    closeFullImageModal();
+
+    let d = chk == "car" ? photo.length : book.length;
+    let max = chk == "car" ? maxCarPhotos : maxBookPhotos;
+    let msg = "You can upload only " + max + " images";
+    if (d == max) {
+      Alert.alert("", msg);
+      return;
+    }
+
+    let maxPhotos = chk == "car" ? 5 - photo.length : 2 - book.length;
+
+    try {
+      let options = {
+        mediaType: "image",
+        isPreview: false,
+        maxSelectedAssets: maxPhotos,
+      };
+      const res = await MultipleImagePicker.openPicker(options);
+
+      if (res) {
+        let data = chk == "car" ? photo : book;
+        if (data.length > 0) {
+          let ar = data;
+          res.map((e, i, a) => {
+            let uri = e.path;
+            if (Platform.OS == "android" && apiLevel < 29) {
+              uri = "file://" + uri;
+            }
+            let isAlreadySelectimage = data.find((x) => x.uri == uri)
+              ? true
+              : false;
+
+            if (!isAlreadySelectimage) {
+              const obj = { name: e.fileName, uri: uri, type: e.mime };
+              ar.push(obj);
+            }
+          });
+
+          chk == "car" ? setphoto(ar) : setBook(ar);
+          setC(!c);
+          chk == "car" ? setIsEmptyphoto(false) : setIsEmptyBook(false);
+        } else {
+          let ar = [];
+          res.map((e, i, a) => {
+            let uri = e.path;
+
+            if (Platform.OS == "android" && apiLevel < 29) {
+              uri = "file://" + uri;
+            }
+            const obj = { name: e.fileName, uri: uri, type: e.mime };
+            ar.push(obj);
+          });
+          chk == "car" ? setphoto(ar) : setBook(ar);
+          chk == "car" ? setIsEmptyphoto(false) : setIsEmptyBook(false);
+        }
+      }
+    } catch (error) {
+      console.log("multi photo picker error : ", error);
+    }
+  };
+
+  const closeAllDropDown = () => {
+    setisDropDownMake(false);
+    setisDropDownName(false);
+    setisDropDownModal(false);
+    setisDropDownType(false);
+  };
+
+  const closeFullImageModal = () => {
+    setpvm(false);
+    setpv("");
+  };
+
+  const onLogout = () => {
+    userStore.userStore.Logout();
+  };
+
+  const onClickButton = (t) => {
+    if (t == "add car") {
+      setisaddcarModalVisible(true);
+    }
+  };
+
+  const removePhoto = (i, chk) => {
+    if (i > -1) {
+      if (chk == "car") {
+        photo.splice(i, 1);
+      } else {
+        book.splice(i, 1);
+      }
+      setC(!c);
+    }
+  };
+
+  const renderShowPhotos = (data, c) => {
+    const p = data.map((e, i, a) => {
+      return (
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            width: 75,
+            height: "100%",
+            marginHorizontal: 5,
+            paddingVertical: 10,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => {
+              Keyboard.dismiss();
+              closeAllDropDown();
+              setpv(e.uri);
+              setpvm(true);
+            }}
+            activeOpacity={0.7}
+            style={styles.photoBoxImage}
+          >
+            <Image
+              source={{
+                uri: e.uri,
+              }}
+              style={styles.image}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              removePhoto(i, c), closeAllDropDown();
+            }}
+            style={{ position: "absolute", top: 3, right: 3 }}
+            activeOpacity={0.7}
+          >
+            <Entypo name="circle-with-cross" color={"#38464F"} size={18} />
+          </TouchableOpacity>
+        </View>
+      );
+    });
+    return p;
+  };
+
+  const getCarByBrand = (id) => {
+    let carListData = [];
+    if (allcarNames.length > 0) {
+      allcarNames.map((e) => {
+        if (e.company._id == id) {
+          carListData.push(e);
+        }
+      });
+    }
+
+    if (carListData.length > 0) {
+      var d = [];
+      carListData.map((item, i, a) => {
+        d.push(item);
+        if (i == a.length - 1) {
+          setCarsList(d);
+        }
+      });
+    } else {
+      setCarsList([]);
+    }
+  };
+
+  const renderOptin = () => {
+    return (
+      <View
+        style={{
+          marginTop: 15,
+          backgroundColor: theme.colors.containerBackground,
+          elevation: 5,
+          padding: 10,
+          borderRadius: 4,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <utils.vectorIcon.FontAwesome5 name="car" color="black" size={35} />
+
+        <View style={{ width: "70%" }}>
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={{
+              fontSize: 16,
+              color: "black",
+              fontFamily: "Inter-Bold",
+              lineHeight: 20,
+            }}
+          >
+            Opt-in
+          </Text>
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={{
+              fontSize: 13,
+              color: theme.colors.placeholder,
+              lineHeight: 20,
+            }}
+          >
+            Enable to get more bookings
+          </Text>
+        </View>
+
+        <ToggleSwitch
+          isOn={activeChecked}
+          onColor="#35cf2d"
+          offColor="silver"
+          size="small"
+          onToggle={(t) => onActiveCheckedChange(t)}
+        />
+      </View>
+    );
+  };
+
+  const renderBottonButton = () => {
+    let text = "add car";
+
+    return (
+      <TouchableOpacity
+        onPress={() => onClickButton(text)}
+        disabled={loader}
+        style={styles.Button}
+      >
+        <LinearGradient
+          colors={[theme.colors.primary, theme.colors.primary_light]}
+          style={styles.LinearGradient}
+        >
+          {loader && <ActivityIndicator color={"white"} size={22} />}
+          {!loader && <Text style={styles.ButtonText}>{text}</Text>}
         </LinearGradient>
-        </TouchableOpacity>
-    )
-  }
- 
+      </TouchableOpacity>
+    );
+  };
 
-return(
-<Layout style={styles.container}>
-  
-  {renderTermsModal()}
-  
-   {(!isInternet) &&(
-      <View style={{position:"absolute",marginTop:"80%",alignSelf:"center",padding:10}}>
-       <theme.Text style={{fontSize:15,fontFamily:theme.fonts.fontNormal,color:"red"}}> 
-          Please connect internet
-     </theme.Text> 
+  const renderAddCarModal = () => {
+    return (
+      <MModal
+        isVisible={isaddcarModalVisible}
+        onRequestClose={() => {
+          if (!loader) setisaddcarModalVisible(false);
+        }}
+      >
+        <SafeAreaView
+          style={{ flex: 1, backgroundColor: theme.colors.containerBackground }}
+        >
+          {pvm && renderFullImage()}
+          <Message
+            load={loading}
+            fast={false}
+            title={
+              !images_uploaded
+                ? "Uploading images (" +
+                  imgUploadCount +
+                  "/" +
+                  (photo.length + book.length) +
+                  ")"
+                : "Registering Vehicle"
+            }
+          />
+
+          <theme.StackHeader
+            nav={props.navigation}
+            title={"Car Details"}
+            screen={"addcar"}
+            goback={() => {
+              if (!loader) {
+                setisaddcarModalVisible(false);
+              }
+            }}
+          />
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.Body}>
+              <Text style={[styles.BodyTitle, { marginTop: 20 }]}>Type*</Text>
+              <View style={{ width: "100%" }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    closeAllDropDown();
+                    setisDropDownType(!isDropDownType);
+                    setinValidType(false);
+                  }}
+                  activeOpacity={0.4}
+                  style={styles.InputLoc}
+                >
+                  <View style={{ width: "90%" }}>
+                    <Text
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                      style={[
+                        styles.ChargesTextloc,
+                        {
+                          color: type.type
+                            ? theme.colors.textColor
+                            : theme.colors.placeholder,
+                        },
+                      ]}
+                    >
+                      {type.type ? type.type : "Select Car Type"}
+                    </Text>
+                  </View>
+                  <AntDesign
+                    name="down"
+                    color={theme.colors.placeholder}
+                    size={12}
+                  />
+                </TouchableOpacity>
+                {isDropDownType && renderDropDown("type")}
+              </View>
+              {inValidType ? (
+                <Text style={styles.ErrorMessage}>Select car type.</Text>
+              ) : null}
+
+              <Text style={[styles.BodyTitle, { marginTop: 20 }]}>Make*</Text>
+              <View style={{ width: "100%" }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    closeAllDropDown();
+                    setisDropDownMake(!isDropDownMake);
+                    setInvalidMake(false);
+                  }}
+                  activeOpacity={0.4}
+                  style={styles.InputLoc}
+                >
+                  <View style={{ width: "90%" }}>
+                    <Text
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                      style={[
+                        styles.ChargesTextloc,
+                        {
+                          color: selectedMake.name
+                            ? theme.colors.textColor
+                            : theme.colors.placeholder,
+                        },
+                      ]}
+                    >
+                      {selectedMake.name
+                        ? selectedMake.name
+                        : "Select Car Make"}
+                    </Text>
+                  </View>
+                  <AntDesign
+                    name="down"
+                    color={theme.colors.placeholder}
+                    size={12}
+                  />
+                </TouchableOpacity>
+                {isDropDownMake && renderDropDown("make")}
+              </View>
+              {inValidMake ? (
+                <Text style={styles.ErrorMessage}>Select car brand.</Text>
+              ) : null}
+              {selectedMake.length != 0 && (
+                <>
+                  <Text style={[styles.BodyTitle, { marginTop: 20 }]}>
+                    Car Name*
+                  </Text>
+                  <View style={{ width: "100%" }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        closeAllDropDown();
+                        setisDropDownName(!isDropDownName);
+                        setinValidCar(false);
+                      }}
+                      activeOpacity={0.4}
+                      style={styles.InputLoc}
+                    >
+                      <View style={{ width: "90%" }}>
+                        <Text
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                          style={[
+                            styles.ChargesTextloc,
+                            {
+                              color: car.name
+                                ? theme.colors.textColor
+                                : theme.colors.placeholder,
+                            },
+                          ]}
+                        >
+                          {car.name ? car.name : "Select Car Name"}
+                        </Text>
+                      </View>
+                      <AntDesign
+                        name="down"
+                        color={theme.colors.placeholder}
+                        size={12}
+                      />
+                    </TouchableOpacity>
+                    {isDropDownName && renderDropDown("name")}
+                  </View>
+                </>
+              )}
+              {inValidCar ? (
+                <Text style={styles.ErrorMessage}>Select car name.</Text>
+              ) : null}
+
+              <View style={{ flexDirection: "row" }}>
+                <Text style={styles.BodyTitleLeft}>Color*</Text>
+              </View>
+              <View style={styles.DropDownRightt}>
+                <TextInput
+                  onFocus={() => {
+                    closeAllDropDown();
+                  }}
+                  style={{
+                    marginLeft: 5,
+                    color: theme.colors.textColor,
+                    padding: 5,
+                  }}
+                  maxLength={10}
+                  placeholder="Car color"
+                  autoCapitalize="characters"
+                  placeholderTextColor="#949494"
+                  onChangeText={(val) => {
+                    setcolor(val);
+                    setinValidColor(false);
+                  }}
+                />
+              </View>
+              {inValidColor ? (
+                <Text style={[styles.ErrorMessage, { marginVertical: 2 }]}>
+                  Car color is required.
+                </Text>
+              ) : null}
+
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text style={styles.BodyTitleLeft}>Model*</Text>
+                <Text style={styles.BodyTitleRight}>Registration No*</Text>
+              </View>
+              <View
+                style={{
+                  flexDirection: "row",
+
+                  width: "100%",
+                  marginTop: 5,
+                }}
+              >
+                <View style={{ width: "48%" }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      closeAllDropDown();
+                      setisDropDownModal(!isDropDownModal);
+                    }}
+                    activeOpacity={0.4}
+                    style={styles.DropDownModal}
+                  >
+                    <View style={{ width: "90%" }}>
+                      <Text
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                        style={[
+                          styles.ChargesTextloc,
+                          {
+                            color: model.title ? "black" : theme.colors.primary,
+                          },
+                        ]}
+                      >
+                        {model.title ? model.title : "Select"}
+                      </Text>
+                    </View>
+                    <AntDesign
+                      name="down"
+                      color={theme.colors.placeholder}
+                      size={12}
+                    />
+                  </TouchableOpacity>
+                  {isDropDownModal && renderDropDown("modal")}
+                </View>
+
+                <View style={styles.DropDownRight}>
+                  <TextInput
+                    onFocus={() => {
+                      closeAllDropDown();
+                    }}
+                    style={{
+                      marginLeft: 5,
+                      color: theme.colors.textColor,
+                      padding: 5,
+                    }}
+                    maxLength={10}
+                    placeholder=""
+                    autoCapitalize="characters"
+                    placeholderTextColor="#949494"
+                    onChangeText={(val) => {
+                      setRegNo(val);
+                      setisEmptyRegNo(false);
+                      setinValidRegNo(false);
+                    }}
+                  />
+                </View>
+                {isEmptyRegNo || inValidRegNo ? (
+                  <Text
+                    style={[
+                      styles.ErrorMessage,
+                      { top: 47, left: "52%", position: "absolute" },
+                    ]}
+                  >
+                    {isEmptyRegNo
+                      ? "Registration No is required."
+                      : inValidRegNo
+                      ? "Registration No is invalid."
+                      : ""}
+                  </Text>
+                ) : null}
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text style={styles.BodyTitleLeft}>Engine Capacity*</Text>
+                <Text style={styles.BodyTitleRight}>Seating Capacity*</Text>
+              </View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  width: "100%",
+                  marginTop: 5,
+                }}
+              >
+                <View style={styles.DropDown}>
+                  <TextInput
+                    onFocus={() => {
+                      closeAllDropDown();
+                    }}
+                    style={{ marginLeft: 5, color: "#000", padding: 5 }}
+                    maxLength={5}
+                    placeholder=""
+                    value={engine}
+                    keyboardType="numeric"
+                    placeholderTextColor="#949494"
+                    onChangeText={(val) => {
+                      setEngine(val.replace(/[^0-9]/, ""));
+                      setinValidEngine(false);
+                    }}
+                  />
+                </View>
+                {inValidEngine ? (
+                  <Text
+                    style={[
+                      styles.ErrorMessage,
+                      { top: 45, position: "absolute" },
+                    ]}
+                  >
+                    Engine Capacity is required.
+                  </Text>
+                ) : null}
+                <View style={styles.DropDownRight}>
+                  <TextInput
+                    onFocus={() => {
+                      closeAllDropDown();
+                    }}
+                    style={{ marginLeft: 5, color: "#000", padding: 5 }}
+                    maxLength={5}
+                    value={seating}
+                    placeholder=""
+                    keyboardType="numeric"
+                    placeholderTextColor="#949494"
+                    onChangeText={(val) => {
+                      setSeating(val.replace(/[^0-9]/, ""));
+                      setinValidSeating(false);
+                    }}
+                  />
+                </View>
+                {inValidSeating ? (
+                  <Text
+                    style={[
+                      styles.ErrorMessage,
+                      { top: 45, left: "52%", position: "absolute" },
+                    ]}
+                  >
+                    Seating Capacity is required.
+                  </Text>
+                ) : null}
+              </View>
+              <Text style={[styles.BodyTitle, { marginTop: 15 }]}>
+                Transmission
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  width: "100%",
+                  marginTop: 5,
+                }}
+              >
+                <TouchableOpacity
+                  style={
+                    transmission == "auto"
+                      ? [styles.DropDown, { backgroundColor: "#FDB349" }]
+                      : styles.DropDown
+                  }
+                  onPress={() => {
+                    setTransmission("auto");
+                    Keyboard.dismiss();
+                    closeAllDropDown();
+                  }}
+                >
+                  <Text
+                    style={
+                      transmission == "auto"
+                        ? { marginLeft: 5, alignSelf: "center", color: "#fff" }
+                        : { marginLeft: 5, alignSelf: "center", color: "#000" }
+                    }
+                  >
+                    Automatic
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={
+                    transmission == "manual"
+                      ? [styles.DropDownRight, { backgroundColor: "#FDB349" }]
+                      : styles.DropDownRight
+                  }
+                  onPress={() => {
+                    setTransmission("manual");
+                    Keyboard.dismiss();
+                    closeAllDropDown();
+                  }}
+                >
+                  <Text
+                    style={
+                      transmission == "manual"
+                        ? { marginLeft: 5, alignSelf: "center", color: "#fff" }
+                        : { marginLeft: 5, alignSelf: "center", color: "#000" }
+                    }
+                  >
+                    Manual
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View
+                style={{
+                  marginTop: 20,
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text style={styles.BodyTitle}>Car Photos*</Text>
+
+                <Text style={styles.CountText}>
+                  {" "}
+                  ({photo.length}/{maxCarPhotos})
+                </Text>
+              </View>
+
+              <View
+                style={
+                  photo.length == 0
+                    ? styles.photoEmptyContainer
+                    : styles.photoContainer
+                }
+              >
+                {photo.length == 0 && (
+                  <TouchableOpacity
+                    onPress={() => MultipleImage("car")}
+                    activeOpacity={0.6}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexDirection: "row",
+                    }}
+                  >
+                    <AntDesign
+                      name="upload"
+                      size={18}
+                      color={theme.colors.placeholder}
+                    />
+                    <Text
+                      style={{
+                        fontSize: responsiveFontSize(2.2),
+                        color: theme.colors.placeholder,
+                        marginLeft: 15,
+                      }}
+                    >
+                      Upload Photos
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {photo.length > 0 && (
+                  <View style={{ width: "20%", paddingVertical: 10 }}>
+                    <TouchableOpacity
+                      onPress={() => MultipleImage("car")}
+                      activeOpacity={0.6}
+                      style={[
+                        styles.photoBox,
+                        { backgroundColor: "white", elevation: 3 },
+                      ]}
+                    >
+                      <View style={styles.LinearGradient}>
+                        <MaterialIcons
+                          name="add-photo-alternate"
+                          color={"#054E96"}
+                          size={32}
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {photo.length > 0 && (
+                  <View
+                    style={{
+                      width: "3%",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginVertical: 10,
+                      marginHorizontal: 5,
+                    }}
+                  >
+                    <View style={styles.photoSeparatorLine} />
+                  </View>
+                )}
+
+                {photo.length > 0 && (
+                  <ScrollView
+                    style={{
+                      width: "76%",
+                      height: "100%",
+                    }}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                  >
+                    {renderShowPhotos(photo, "car")}
+                  </ScrollView>
+                )}
+              </View>
+
+              {(photo.length > 0 && photo.length < minCarPhotos) ||
+              IsEmptyphoto ? (
+                <Text style={styles.ErrorMessage}>
+                  Minimum {minCarPhotos} Images is required.
+                </Text>
+              ) : null}
+
+              <View
+                style={{
+                  marginTop: 20,
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text style={styles.BodyTitle}>Registration Book Photos*</Text>
+
+                <Text style={styles.CountText}>
+                  {" "}
+                  ({book.length}/{maxBookPhotos})
+                </Text>
+              </View>
+
+              <View
+                style={
+                  book.length <= 0
+                    ? styles.photoEmptyContainer
+                    : styles.photoContainer
+                }
+              >
+                {book.length == 0 && (
+                  <TouchableOpacity
+                    onPress={() => MultipleImage("book")}
+                    activeOpacity={0.6}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexDirection: "row",
+                    }}
+                  >
+                    <AntDesign
+                      name="upload"
+                      size={18}
+                      color={theme.colors.placeholder}
+                    />
+                    <Text
+                      style={{
+                        fontSize: responsiveFontSize(2.2),
+                        color: theme.colors.placeholder,
+                        marginLeft: 15,
+                      }}
+                    >
+                      Upload Images
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {book.length > 0 && (
+                  <View style={{ width: "20%", paddingVertical: 10 }}>
+                    <TouchableOpacity
+                      onPress={() => MultipleImage("book")}
+                      activeOpacity={0.7}
+                      style={[
+                        styles.photoBox,
+                        { backgroundColor: "white", elevation: 3 },
+                      ]}
+                    >
+                      <View style={styles.LinearGradient}>
+                        <MaterialIcons
+                          name="add-photo-alternate"
+                          color={"#054E96"}
+                          size={32}
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {book.length > 0 && (
+                  <View
+                    style={{
+                      width: "2%",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginVertical: 10,
+                      marginHorizontal: 3,
+                    }}
+                  >
+                    <View style={styles.photoSeparatorLine} />
+                  </View>
+                )}
+
+                {book.length > 0 && (
+                  <ScrollView
+                    style={{
+                      width: "76%",
+                      height: "100%",
+                    }}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                  >
+                    {renderShowPhotos(book, "book")}
+                  </ScrollView>
+                )}
+              </View>
+
+              {(book.length > 0 && book.length < minBookPhotos) ||
+              IsEmptyBook ? (
+                <Text style={styles.ErrorMessage}>
+                  Minimum {minBookPhotos} Image is required.
+                </Text>
+              ) : null}
+
+              {renderAddCarModalButton()}
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </MModal>
+    );
+  };
+
+  const renderAddCarModalButton = () => {
+    let text = "continue";
+
+    return (
+      <TouchableOpacity
+        onPress={() => {
+          addCar();
+        }}
+        disabled={loader}
+        style={styles.Button}
+      >
+        <LinearGradient
+          colors={[theme.colors.primary, theme.colors.primary_light]}
+          style={styles.LinearGradient}
+        >
+          {loader && <ActivityIndicator color={"white"} size={22} />}
+          {!loader && <Text style={styles.ButtonText}>{text}</Text>}
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderHeader = () => {
+    return (
+      <>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            backgroundColor: theme.colors.containerBackground,
+            elevation: 5,
+            padding: 10,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 25,
+              fontFamily: "Inter-Bold",
+              color: "black",
+            }}
+          >
+            Car
+          </Text>
+
+          <TouchableOpacity onPress={() => onLogout()}>
+            <Text
+              style={{
+                fontSize: 14,
+                color: "red",
+                textDecorationLine: "underline",
+              }}
+            >
+              Sign out
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {!isInternet && (
+          <View
+            style={{
+              alignSelf: "center",
+              padding: 10,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 15,
+                fontFamily: theme.fonts.fontNormal,
+                color: "red",
+              }}
+            >
+              Please connect internet
+            </Text>
+          </View>
+        )}
+      </>
+    );
+  };
+
+  const renderDropDown = (c) => {
+    let data = [];
+
+    if (c == "make") {
+      data = brandList;
+    } else if (c == "name") {
+      data = carsList;
+    } else if (c == "modal") {
+      data = yearList;
+    } else if (c == "type") {
+      data = typeList;
+    }
+
+    const onclickSelect = (d) => {
+      if (c == "make") {
+        setCarsList([]);
+        setCar([]);
+        getCarByBrand(d._id);
+        setSelectedMake(d);
+      } else if (c == "name") {
+        setCar(d);
+      } else if (c == "modal") {
+        setModel(d);
+      } else if (c == "type") {
+        settype(d);
+      }
+    };
+
+    // let abs = Platform.OS == 'ios' ? false : true;
+    console.log("drop down data : ", data);
+
+    return (
+      <DropDown
+        data={data}
+        onSelectItem={(d) => {
+          onclickSelect(d);
+        }}
+        setVisible={(d) => {
+          closeAllDropDown();
+        }}
+        search={c == "modal" ? false : true}
+        c={c}
+        absolute={false}
+      />
+    );
+  };
+
+  const renderShowCar = () => {
+    return (
+      <View style={{ marginTop: 20 }}>
+        <View
+          style={{
+            backgroundColor: theme.colors.containerBackground,
+            padding: 7,
+            borderRadius: 4,
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
+          <utils.vectorIcon.Ionicons
+            name="ios-car-sport-outline"
+            color="black"
+            size={85}
+          />
+
+          <View style={{ width: "80%", marginLeft: 10 }}>
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={{
+                fontSize: 17,
+                color: "black",
+                fontFamily: "Inter-Bold",
+                textTransform: "capitalize",
+                lineHeight: 20,
+              }}
+            >
+              {cars.car_name.name || "-----"}
+            </Text>
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={{
+                fontSize: 15,
+                color: theme.colors.placeholder,
+                textTransform: "capitalize",
+                lineHeight: 20,
+              }}
+            >
+              {cars.registration_number}
+            </Text>
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={{
+                fontSize: 15,
+                color: theme.colors.placeholder,
+                textTransform: "capitalize",
+                lineHeight: 20,
+              }}
+            >
+              {cars.type.type}
+            </Text>
+
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={{
+                  fontSize: 14,
+                  fontFamily: "Inter-Bold",
+                  color: theme.colors.textSubtitleColor,
+                  textTransform: "capitalize",
+                  lineHeight: 20,
+                }}
+              >
+                Staus:{"  "}
+              </Text>
+
+              <Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={{
+                  fontSize: 14,
+                  color: cars.is_active ? "green" : "orange",
+                  textTransform: "capitalize",
+                  lineHeight: 20,
+                }}
+              >
+                {cars.is_active ? "Verified" : "not Verified"}
+              </Text>
+            </View>
+          </View>
+        </View>
       </View>
-    ) }
+    );
+  };
 
+  return (
+    <Layout style={styles.container}>
+      {isaddcarModalVisible && renderAddCarModal()}
+      {renderHeader()}
+      <KeyboardAvoidingView
+        keyboardVerticalOffset={Platform.OS == "ios" ? 10 : 0}
+        behavior={Platform.OS == "ios" ? "padding" : ""}
+        style={{ flex: 1, paddingHorizontal: 10 }}
+      >
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* <utils.Loader loader={loader} /> */}
 
+          {!cars && (
+            <View
+              style={{
+                marginTop: "60%",
+                width: "100%",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Image
+                source={require("../../assets/images/car.png")}
+                style={{ height: 100, width: 100, resizeMode: "contain" }}
+              />
 
-     <KeyboardAvoidingView
-  keyboardVerticalOffset={Platform.OS == "ios" ? 10 : 0}
-  behavior={Platform.OS == "ios" ? "padding" : ""} 
-  style={{ flex: 1}} >
-    <ScrollView showsVerticalScrollIndicator={false}>
-    <utils.Loader  loader={loader} />
-  
-  <View style={{flexDirection:"row",alignItems:"center",justifyContent:"space-between",marginTop:10}}>
-<theme.Text style={{fontSize:25,fontFamily:theme.fonts.fontMedium,color:"black"}}> 
-     Car
-  </theme.Text>
+              <Text style={styles.subTitle}>No car is registered yet</Text>
+            </View>
+          )}
 
- <TouchableOpacity onPress={()=>onLogout()} >
-<theme.Text style={{fontSize:14,color:"red",textDecorationLine:"underline"}}> 
- Sign out
-</theme.Text>
-</TouchableOpacity>
-  </View>
-    
+          {cars && (
+            <>
+              {renderOptin()}
+              <View>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontFamily: "Inter-Bold",
+                    color: "black",
+                    marginTop: 20,
+                  }}
+                >
+                  Dedicated Car
+                </Text>
+                {renderShowCar()}
+              </View>
+            </>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-
-     {renderOptin()}
-
-     
-   {(car=="e" && isInternet) &&(
-      <View style={{ marginTop:"50%",alignSelf:"center",padding:10}}>
-
-       <theme.Text style={{fontSize:15,fontFamily:theme.fonts.fontNormal,color:"grey"}}> 
-       Network request failed 
-     </theme.Text> 
-
-    <TouchableOpacity onPress={()=>getCar()} style={{marginTop:20,alignSelf:"center"}} >
-    <theme.Text style={{fontSize:14,color:"red",textDecorationLine:"underline" }}> 
-       Retry
-    </theme.Text>
-    </TouchableOpacity>
-
-      </View>
-    ) }
-   
-  {((car==false && car!="e") && !loader && isInternet )&&(
-    <View>
- <theme.Text style={{fontSize:16,fontFamily:theme.fonts.fontMedium,color:"black",marginTop:20}}> 
- No car found
-</theme.Text>
-
-<theme.Text style={{fontSize:14,fontFamily:theme.fonts.fontMedium,color:"grey",marginTop:30}}> 
- Please ask admin to register your car 
-</theme.Text>
-
-  
-</View>
-    )}
-
-  {((car!=false)  && car!="e" && car!=="a" && !loader && isInternet) &&(
-  <View>
-  <theme.Text style={{fontSize:16,fontFamily:theme.fonts.fontMedium,color:"black",marginTop:20}}> 
-  Dedicated Car
- </theme.Text>
- {renderShowCar()}  
-  </View>
-    )}
-    
-    </ScrollView>
-
-     </KeyboardAvoidingView> 
-
-     {((car) && !loader && isInternet) && renderButton()}
- 
-
-  </Layout>
-)
-    
+      {renderBottonButton()}
+    </Layout>
+  );
 }
-
