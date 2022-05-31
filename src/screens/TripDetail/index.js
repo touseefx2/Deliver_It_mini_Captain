@@ -489,7 +489,7 @@ function TripDetail(props) {
     var m = Math.floor((d % 3600) / 60);
     var s = Math.floor((d % 3600) % 60);
 
-    var hDisplay = h > 0 ? h + (h == 1 ? " h, " : " h, ") : "";
+    var hDisplay = h > 0 ? h + (h == 1 ? " hr, " : " hr, ") : "";
     var mDisplay = m > 0 ? m + (m == 1 ? " min, " : " min, ") : "";
     var sDisplay = s > 0 ? s + (s == 1 ? " sec" : " sec") : "";
     return hDisplay + mDisplay + sDisplay;
@@ -503,33 +503,46 @@ function TripDetail(props) {
 
     let pymntm = e.payment_mode;
 
-    //  let waitingTime=   e.waiting_time
-
     let cancelmsg = e.cancellation_reason;
 
-    let amount = 0;
+    let waitingTime = e.waiting_time || 0;
+    let waitingCharges = e.waiting_charges || 0;
+    let distanceCharges = e.trip_rent || 0;
+
+    let userwallet = e.deduct_from_wallet || false;
+    let negativeCharges = e.amt_from_wallet < 0 ? e.amt_from_wallet : 0; //if walet user ngtv amount add in rent
+    let positiveCharges = e.amt_from_wallet > 0 ? e.amt_from_wallet : 0; //paymnt amount cut from wallet
+    let totalCharges = 0;
 
     let status = e.status[e.status.length - 1].status;
 
-    let cc = 0; //colect cash
+    let collectCash = 0; //colect cash
+    collectCash = e.customer_paid || 0;
 
-    if (pymntm == "cash" && status == "ended" && trnsctn) {
-      if (trnsctn.debit == 0 && trnsctn.credit == 0) {
-        cc = e.rent;
-      }
-      if (trnsctn.debit > 0) {
-        cc = e.rent + trnsctn.debit;
-      }
-      if (trnsctn.credit > 0) {
-        cc = e.rent - trnsctn.credit;
-      }
+    if (collectCash !== 0 && trnsctn.credit > 0) {
+      collectCash = collectCash + trnsctn.credit;
     }
+    if (collectCash !== 0 && trnsctn.debit > 0) {
+      collectCash = collectCash - trnsctn.debit;
+    }
+
+    // if (pymntm == "cash" && status == "ended" && trnsctn) {
+    //   if (trnsctn.debit == 0 && trnsctn.credit == 0) {
+    //     cc = e.rent;
+    //   }
+    //   if (trnsctn.debit > 0) {
+    //     cc = e.rent + trnsctn.debit;
+    //   }
+    //   if (trnsctn.credit > 0) {
+    //     cc = e.rent - trnsctn.credit;
+    //   }
+    // }
 
     if (status == "ended") {
-      amount = e.rent;
+      totalCharges = e.rent_afterBaseCharges;
     }
     if (status == "cancelled") {
-      amount = e.amt_paid;
+      totalCharges = e.amt_paid;
     }
 
     let startridetime = "";
@@ -821,48 +834,6 @@ function TripDetail(props) {
                   width: "40%",
                 }}
               >
-                Total distance
-              </theme.Text>
-              <theme.Text
-                numberOfLines={1}
-                ellipsizeMode="tail"
-                style={{
-                  fontSize: fs,
-                  color: "black",
-                  fontFamily: theme.fonts.fontMedium,
-                  textAlign: "right",
-                  lineHeight: 20,
-                  width: "50%",
-                }}
-              >
-                {e.distance.toFixed(2)} km
-              </theme.Text>
-            </View>
-
-            {Sep()}
-            {SepLine()}
-            {Sep()}
-
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                width: "100%",
-                alignSelf: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <theme.Text
-                numberOfLines={2}
-                ellipsizeMode="tail"
-                style={{
-                  fontSize: fs,
-                  color: "black",
-                  fontFamily: theme.fonts.fontMedium,
-                  lineHeight: 20,
-                  width: "40%",
-                }}
-              >
                 Payment mode
               </theme.Text>
               <theme.Text
@@ -905,7 +876,7 @@ function TripDetail(props) {
                   width: "40%",
                 }}
               >
-                Rent
+                User Wallet
               </theme.Text>
               <theme.Text
                 numberOfLines={1}
@@ -919,12 +890,224 @@ function TripDetail(props) {
                   width: "50%",
                 }}
               >
-                PKR {amount.toFixed()}
+                {userwallet ? "On" : "Off"}
               </theme.Text>
             </View>
 
-            {pymntm == "cash" && (
-              <View>
+            {Sep()}
+            {SepLine()}
+            {Sep()}
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                width: "100%",
+                alignSelf: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <theme.Text
+                numberOfLines={2}
+                ellipsizeMode="tail"
+                style={{
+                  fontSize: fs,
+                  color: "black",
+                  fontFamily: theme.fonts.fontMedium,
+                  lineHeight: 20,
+                  width: "40%",
+                }}
+              >
+                Total distance
+              </theme.Text>
+              <theme.Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={{
+                  fontSize: fs,
+                  color: "black",
+                  fontFamily: theme.fonts.fontMedium,
+                  textAlign: "right",
+                  lineHeight: 20,
+                  width: "50%",
+                }}
+              >
+                {e.distance.toFixed(2)} km
+              </theme.Text>
+            </View>
+
+            {Sep()}
+            {SepLine()}
+            {Sep()}
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                width: "100%",
+                alignSelf: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <theme.Text
+                numberOfLines={2}
+                ellipsizeMode="tail"
+                style={{
+                  fontSize: fs,
+                  color: "black",
+                  fontFamily: theme.fonts.fontMedium,
+                  lineHeight: 20,
+                  width: "40%",
+                }}
+              >
+                Waiting time
+              </theme.Text>
+              <theme.Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={{
+                  fontSize: fs - 1,
+                  color: "black",
+                  fontFamily: theme.fonts.fontMedium,
+                  textAlign: "right",
+                  lineHeight: 20,
+                  width: "50%",
+                }}
+              >
+                {waitingTime == 0
+                  ? "0 sec"
+                  : secondsToHms((waitingTime * 60).toFixed(0))}
+              </theme.Text>
+            </View>
+
+            {Sep()}
+            {SepLine()}
+            {Sep()}
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                width: "100%",
+                alignSelf: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <theme.Text
+                numberOfLines={2}
+                ellipsizeMode="tail"
+                style={{
+                  fontSize: fs,
+                  color: "black",
+                  fontFamily: theme.fonts.fontMedium,
+                  lineHeight: 20,
+                  width: "40%",
+                }}
+              >
+                Distance charges
+              </theme.Text>
+              <theme.Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={{
+                  fontSize: fs,
+                  color: "black",
+                  fontFamily: theme.fonts.fontMedium,
+                  textAlign: "right",
+                  lineHeight: 20,
+                  width: "50%",
+                }}
+              >
+                PKR {distanceCharges}
+              </theme.Text>
+            </View>
+
+            {Sep()}
+            {SepLine()}
+            {Sep()}
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                width: "100%",
+                alignSelf: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <theme.Text
+                numberOfLines={2}
+                ellipsizeMode="tail"
+                style={{
+                  fontSize: fs,
+                  color: "black",
+                  fontFamily: theme.fonts.fontMedium,
+                  lineHeight: 20,
+                  width: "40%",
+                }}
+              >
+                Waiting charges
+              </theme.Text>
+              <theme.Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={{
+                  fontSize: fs,
+                  color: "black",
+                  fontFamily: theme.fonts.fontMedium,
+                  textAlign: "right",
+                  lineHeight: 20,
+                  width: "50%",
+                }}
+              >
+                PKR {waitingCharges.toFixed()}
+              </theme.Text>
+            </View>
+
+            {Sep()}
+            {SepLine()}
+            {Sep()}
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                width: "100%",
+                alignSelf: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <theme.Text
+                numberOfLines={2}
+                ellipsizeMode="tail"
+                style={{
+                  fontSize: fs,
+                  color: "black",
+                  fontFamily: theme.fonts.fontMedium,
+                  lineHeight: 20,
+                  width: "40%",
+                }}
+              >
+                Total charges
+              </theme.Text>
+              <theme.Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={{
+                  fontSize: fs,
+                  color: "black",
+                  fontFamily: theme.fonts.fontMedium,
+                  textAlign: "right",
+                  lineHeight: 20,
+                  width: "50%",
+                }}
+              >
+                PKR {totalCharges.toFixed()}
+              </theme.Text>
+            </View>
+
+            {negativeCharges !== 0 && (
+              <>
                 {Sep()}
                 {SepLine()}
                 {Sep()}
@@ -949,7 +1132,7 @@ function TripDetail(props) {
                       width: "40%",
                     }}
                   >
-                    Collect Cash
+                    Negative charges
                   </theme.Text>
                   <theme.Text
                     numberOfLines={1}
@@ -963,7 +1146,97 @@ function TripDetail(props) {
                       width: "50%",
                     }}
                   >
-                    PKR {cc.toFixed()}
+                    PKR {Math.abs(negativeCharges)}
+                  </theme.Text>
+                </View>
+              </>
+            )}
+
+            {positiveCharges !== 0 && (
+              <>
+                {Sep()}
+                {SepLine()}
+                {Sep()}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    width: "100%",
+                    alignSelf: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <theme.Text
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                    style={{
+                      fontSize: fs,
+                      color: "black",
+                      fontFamily: theme.fonts.fontMedium,
+                      lineHeight: 20,
+                      width: "40%",
+                    }}
+                  >
+                    Wallet pay
+                  </theme.Text>
+                  <theme.Text
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    style={{
+                      fontSize: fs,
+                      color: "black",
+                      fontFamily: theme.fonts.fontMedium,
+                      textAlign: "right",
+                      lineHeight: 20,
+                      width: "50%",
+                    }}
+                  >
+                    PKR {positiveCharges}
+                  </theme.Text>
+                </View>
+              </>
+            )}
+
+            {pymntm == "cash" && (
+              <View>
+                {Sep()}
+                {SepLine()}
+                {Sep()}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    width: "100%",
+                    alignSelf: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <theme.Text
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                    style={{
+                      fontSize: fs,
+                      color: "black",
+                      fontFamily: theme.fonts.fontMedium,
+                      lineHeight: 20,
+                      width: "40%",
+                    }}
+                  >
+                    Cash Collected
+                  </theme.Text>
+                  <theme.Text
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    style={{
+                      fontSize: fs,
+                      color: "black",
+                      fontFamily: theme.fonts.fontMedium,
+                      textAlign: "right",
+                      lineHeight: 20,
+                      width: "50%",
+                    }}
+                  >
+                    PKR {collectCash.toFixed()}
                   </theme.Text>
                 </View>
 
@@ -1005,7 +1278,7 @@ function TripDetail(props) {
                           width: "70%",
                         }}
                       >
-                        PKR {trnsctn.debit.toFixed()} has added to customer
+                        PKR {trnsctn.debit.toFixed()} has been cut from customer
                         wallet
                       </theme.Text>
                     </View>
@@ -1050,8 +1323,8 @@ function TripDetail(props) {
                           width: "70%",
                         }}
                       >
-                        PKR {trnsctn.credit.toFixed()} has cut from customer
-                        wallet
+                        PKR {trnsctn.credit.toFixed()} has been added to
+                        customer wallet
                       </theme.Text>
                     </View>
                   </View>
@@ -1230,7 +1503,7 @@ function TripDetail(props) {
                   width: "50%",
                 }}
               >
-                PKR {amount}
+                PKR {totalCharges}
               </theme.Text>
             </View>
           </View>

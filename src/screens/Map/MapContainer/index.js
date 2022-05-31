@@ -34,8 +34,10 @@ import StarRating from "react-native-star-rating";
 import { Input } from "@ui-kitten/components";
 import db from "../../../database/index";
 import Modal from "react-native-modal";
-import { ActivityIndicator, TextInput } from "react-native-paper";
+import { ActivityIndicator } from "react-native-paper";
 import Geocoder from "react-native-geocoding";
+import { Timer } from "react-native-element-timer";
+import tripstore from "../../../store/trip_store";
 
 export default inject(
   "userStore",
@@ -88,7 +90,14 @@ function MapContainer(props) {
     setnormalPay,
     normalPaycash,
     setnormalPaycash,
+    wtasr,
+    waitingStart,
+    wtasrInital,
+    setwaitingStart,
+    setwtasr,
+    setwtasrInital,
   } = props.tripStore;
+
   const { isInternet, isLocation } = props.generalStore;
 
   let isl = isLocation;
@@ -98,6 +107,7 @@ function MapContainer(props) {
   //after arrive captain captain w8 60 sec for user if cancel after 40 secor red time captn earn 90 rs else captain paid 50 rs
   let wt = 60; //    60 sec
   let cancelTime = 40; //     sec
+
   const [ct, setct] = useState(wt); //w8 time unti se nechy ktna time rah gya wo
 
   const [loader, setloader] = useState(false); //loading indctr in button
@@ -130,6 +140,8 @@ function MapContainer(props) {
   const [starCount, setstarCount] = useState(0);
 
   const mapRef = useRef();
+
+  let timerRef = useRef(null);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
@@ -201,6 +213,10 @@ function MapContainer(props) {
     setnormalPaycash("---");
     clearAllCash();
     setstarCount(0);
+    setwaitingStart("s");
+    setwtasr(0);
+    setwtasrInital(0);
+    timerRef?.current?.stop();
   };
 
   useEffect(() => {
@@ -346,14 +362,27 @@ function MapContainer(props) {
 
   useEffect(() => {
     if (cl != "" && startride && request) {
-      // fetchDistanceBetweenPointsOnline(
-      //   cl.latitude,
-      //   cl.longitude,
-      //  request.dropoff.location.latitude,
-      //  request.dropoff.location.longitude,
-      //  "startridedynamic")
+      fetchDistanceBetweenPointsOnline(
+        cl.latitude,
+        cl.longitude,
+        request.dropoff.location.latitude,
+        request.dropoff.location.longitude,
+        "startridedynamic"
+      );
     }
   }, [cl, request, startride]);
+
+  useEffect(() => {
+    if (startride && !endride) {
+      if (waitingStart != "s") {
+        setwtasrInital(wtasr + wtasrInital);
+        timerRef.current.pause();
+        setwaitingStart(false);
+        setwtasr(0);
+        return;
+      }
+    }
+  }, [startride]);
 
   useEffect(() => {
     if (startride) {
@@ -462,7 +491,7 @@ function MapContainer(props) {
           })
           .then((res) => {
             var distanceString = res.rows[0].elements[0].distance.text;
-            var timeString = res.rows[0].elements[0].duration.text;
+
             var timeSecond = res.rows[0].elements[0].duration.value;
             let s = timeSecond;
             var travelTime = moment(new Date())
@@ -707,6 +736,15 @@ function MapContainer(props) {
 
   const onClickEnd = (dist, DropOff) => {
     if (isInternet) {
+      let w = wtasr + wtasrInital;
+      console.log("wt  : ", w);
+
+      let WaitingTImeinMin = w < 60 ? 0 : w;
+
+      if (WaitingTImeinMin >= 60) {
+        WaitingTImeinMin = WaitingTImeinMin / 60;
+      }
+
       const bodyData = {
         distance: dist,
         current_location: {
@@ -714,12 +752,13 @@ function MapContainer(props) {
           latitude: DropOff.location.latitude,
         },
         dropoff: DropOff,
+        waiting_time: WaitingTImeinMin == 0 ? 0 : WaitingTImeinMin.toFixed(2), //minutes
       };
 
       const header = authToken;
       // method, path, body, header
 
-      console.log("body data end trip : ", bodyData);
+      console.log("End trip body data : ", bodyData);
 
       db.api
         .apiCall("put", db.link.endTrip + request._id, bodyData, header)
@@ -736,6 +775,10 @@ function MapContainer(props) {
           if (response.success) {
             setendride(true);
             setnormalPaycash(response.data.rent);
+            setwaitingStart("s");
+            setwtasr(0);
+            setrequest(response.data);
+            timerRef.current?.stop();
             return;
           }
 
@@ -937,18 +980,20 @@ function MapContainer(props) {
 
     Linking.canOpenURL(url)
       .then((supported) => {
-        if (!supported) {
-          let browser_url =
-            "https://www.google.de/maps/@" +
-            dest.latitude +
-            "," +
-            dest.longitude +
-            "?q=" +
-            label;
-          return Linking.openURL(browser_url);
-        } else {
-          return Linking.openURL(url);
-        }
+        console.log("start google map support", supported);
+        return Linking.openURL(url);
+        // if (supported) {
+        //   let browser_url =
+        //     "https://www.google.de/maps/@" +
+        //     dest.latitude +
+        //     "," +
+        //     dest.longitude +
+        //     "?q=" +
+        //     label;
+        //   return Linking.openURL(browser_url);
+        // } else {
+        //   return Linking.openURL(url);
+        // }
       })
       .catch((err) => console.log("error open google map", err));
   };
@@ -968,7 +1013,7 @@ function MapContainer(props) {
       };
     }
 
-    openMap(dest, "");
+    openMap(dest, "Deliverit mini");
   };
 
   const navigatetoGoogleMaps = (c) => {
@@ -1047,6 +1092,8 @@ function MapContainer(props) {
         onPress: () => {
           if (isl == true) {
             if (isInternet) {
+              timerRef?.current?.pause();
+              setwaitingStart(false);
               fetchDistanceBetweenPointsOnline(
                 request.pickup.location.latitude,
                 request.pickup.location.longitude,
@@ -1162,7 +1209,7 @@ function MapContainer(props) {
       setcashconfirmMV(false);
       setl(true);
 
-      const bodyData = { amt_paid: normalPaycash, debit: ra };
+      const bodyData = { amt_paid: normalPaycash, debit: ra, total_paid: csh };
       const header = authToken;
 
       db.api
@@ -1200,6 +1247,48 @@ function MapContainer(props) {
     }
   };
 
+  const onCashsubmitNormal = (c, ra) => {
+    setcashconfirmMV(false);
+    setl(true);
+
+    const bodyData = { amt_paid: normalPaycash };
+    const header = authToken;
+
+    db.api
+      .apiCall("put", db.link.paycashEqual + request._id, bodyData, header)
+      .then((response) => {
+        console.log("paycashEqual response : ", response);
+
+        if (response.msg == "Invalid Token") {
+          utils.AlertMessage("", response.msg);
+          onLogout();
+          return;
+        }
+
+        if (response.success) {
+          setnormalPay(true);
+          clearAllCash();
+
+          onTripRatingNormal();
+
+          return;
+        }
+
+        if (!response.success) {
+          utils.AlertMessage("", response.message);
+          return;
+        }
+      })
+      .catch((e) => {
+        setl(false);
+        //  utils.AlertMessage("","Network request failed");
+        console.error("paycashEqual catch error : ", e);
+        return;
+      });
+
+    return;
+  };
+
   const onTripRating = () => {
     setl(true);
     let bodyData = { rating: starCount };
@@ -1209,6 +1298,7 @@ function MapContainer(props) {
       .apiCall("put", db.link.addTripRating + request._id, bodyData, header)
       .then((response) => {
         setl(false);
+
         console.log("onTripRating response : ", response);
 
         if (response.msg == "Invalid Token") {
@@ -1236,16 +1326,60 @@ function MapContainer(props) {
       });
   };
 
-  const onclickDoneRide = () => {
-    if (starCount > 0) {
-      if (isInternet) {
-        onTripRating();
+  const onTripRatingNormal = () => {
+    let bodyData = { rating: starCount };
+    const header = authToken;
+
+    db.api
+      .apiCall("put", db.link.addTripRating + request._id, bodyData, header)
+      .then((response) => {
+        setl(false);
+
+        console.log("onTripRating response : ", response);
+
+        if (response.msg == "Invalid Token") {
+          utils.AlertMessage("", response.msg);
+          onLogout();
+          return;
+        }
+
+        if (response.success) {
+          clearallFields();
+          utils.ToastAndroid.ToastAndroid_SB("Trip Complete :)");
+          return;
+        }
+
+        if (!response.success) {
+          utilsS.AlertMessage("", response.message);
+          return;
+        }
+      })
+      .catch((e) => {
+        setl(false);
+        utilsS.AlertMessage("", "Network request failed");
+        console.error("onTripRating catch error : ", e);
+        return;
+      });
+  };
+
+  const onclickDoneRide = (c) => {
+    if (c !== "6") {
+      if (starCount > 0) {
+        if (isInternet) {
+          onTripRating();
+        } else {
+          utils.AlertMessage("", "Please connect internet .");
+        }
       } else {
-        utils.AlertMessage("", "Please connect internet .");
+        clearallFields();
+        utils.ToastAndroid.ToastAndroid_SB("Trip Complete :)");
       }
     } else {
-      clearallFields();
-      utils.ToastAndroid.ToastAndroid_SB("Trip Complete :)");
+      if (isInternet) {
+        onCashsubmitNormal("normal", 0);
+      } else {
+        utils.AlertMessage("", "Please connect internet");
+      }
     }
   };
 
@@ -1293,7 +1427,7 @@ function MapContainer(props) {
     if (csh == "") {
       utils.AlertMessage("", "Please enter amont");
     } else {
-      let npc = normalPaycash.toFixed();
+      let npc = normalPaycash;
       if (cash < npc) {
         setcashG(false);
         setcashconfirmMV(true);
@@ -1311,6 +1445,19 @@ function MapContainer(props) {
       <utils.vectorIcon.Entypo name="cross" size={22} color="gray" />
     </TouchableWithoutFeedback>
   );
+
+  const onStartWaitingTimeAfterStartRide = (v) => {
+    if (v == "Start") {
+      timerRef.current.start();
+      setwaitingStart(true);
+    } else if (v == "Pause") {
+      timerRef.current.pause();
+      setwaitingStart(false);
+    } else if (v == "Continue") {
+      timerRef.current.resume();
+      setwaitingStart(true);
+    }
+  };
 
   const renderShowLocation = () => {
     //when acpt  request
@@ -1574,8 +1721,25 @@ function MapContainer(props) {
       const title = request.dropoff.name;
       const title2 = request.dropoff.address;
 
+      let text =
+        waitingStart == "s"
+          ? "Start"
+          : waitingStart == true
+          ? "Pause"
+          : waitingStart == false
+          ? "Continue"
+          : "";
+      let bbc = text == "Pause" ? "red" : "green";
+
       return (
-        <View style={{ position: "absolute", top: 0, left: 10, right: 10 }}>
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 10,
+            right: 10,
+          }}
+        >
           <View
             style={{
               width: wp("80%"),
@@ -1747,6 +1911,79 @@ function MapContainer(props) {
               </theme.Text>
             </View>
           </View>
+
+          <View
+            style={{
+              width: wp("95%"),
+              borderRadius: 10,
+              padding: 5,
+              marginTop: 2,
+              backgroundColor: "white",
+              elevation: 3,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <theme.Text
+                style={{
+                  fontSize: 13,
+                  color: "black",
+                  fontFamily: theme.fonts.fontMedium,
+                }}
+              >
+                Waiting time :
+              </theme.Text>
+
+              <Timer
+                ref={timerRef}
+                style={styles.timer}
+                textStyle={styles.timerText}
+                onTimes={(e) => {
+                  setwtasr(e);
+                }}
+                initialSeconds={wtasrInital}
+                onPause={(e) => {}}
+                onEnd={(e) => {}}
+              />
+
+              <theme.Text
+                style={{
+                  fontSize: 13,
+                  color: "black",
+                  marginLeft: 5,
+                }}
+              >
+                sec
+              </theme.Text>
+            </View>
+
+            <TouchableOpacity
+              disabled={bbc == "gray" ? true : false}
+              onPress={() => {
+                onStartWaitingTimeAfterStartRide(text);
+              }}
+              style={{
+                backgroundColor: bbc,
+                width: 70,
+                height: 25,
+                borderRadius: 5,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <theme.Text
+                style={{
+                  fontSize: 12,
+                  color: "white",
+                  fontFamily: theme.fonts.fontMedium,
+                }}
+              >
+                {text}
+              </theme.Text>
+            </TouchableOpacity>
+          </View>
         </View>
       );
     }
@@ -1766,93 +2003,181 @@ function MapContainer(props) {
       msg = "End trip";
       c = 2;
     } else if (accept && arrive && startride && endride && request) {
-      //  c=4
-      // if(request.cardPay==true )
-      // {
-      //   msg="Finish"
-      //   c=3
-      // }
-
-      // if(request.cardPay==false)
-      // {
-      // msg="submit"
-      //  c=4
-      // }
-
-      // if(request.normalPay==true )
-      // {
-      //   msg="Finish"
-      //   c=5
-      // }
-
-      if (!normalPay) {
-        msg = "submit";
-        c = 4;
+      if (normalPaycash > 0) {
+        if (!normalPay) {
+          msg = "submit";
+          c = 4;
+        } else {
+          msg = "finish";
+          c = 5;
+        }
       } else {
         msg = "finish";
-        c = 5;
+        c = 6;
       }
+
+      // if (!normalPay) {
+      //   msg = "submit";
+      //   c = 4;
+      // } else {
+      //   msg = "finish";
+      //   c = 5;
+      // }
     }
 
-    //  if card pay done already
-    //    if(c==3){
-    //     return(
-    // null
-    //       // <View style={{position:"absolute",bottom:0,width:wp("95%"),alignSelf:"center",padding:10}}>
+    //  if walet  fulll pay already rent
+    if (c == 6) {
+      return (
+        <View
+          style={{
+            position: "absolute",
+            bottom: 0,
+            width: wp("95%"),
+            alignSelf: "center",
+            padding: 10,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "white",
+              width: "100%",
+              borderRadius: 4,
+              padding: 10,
+              marginBottom: 10,
+              elevation: 5,
+              flexDirection: "row",
+            }}
+          >
+            <View style={{ marginTop: -4 }}>
+              <utils.vectorIcon.SimpleLineIcons
+                name="credit-card"
+                color="black"
+                size={30}
+              />
+            </View>
 
-    //       //   <View style={{backgroundColor:"white",width:"100%",borderRadius:4,padding:10,marginBottom:10,elevation:5,flexDirection:"row"}}>
+            <View style={{ marginLeft: 10, width: "85%" }}>
+              <theme.Text
+                numberOfLines={2}
+                ellipsizeMode="tail"
+                r
+                style={{
+                  fontSize: 19,
+                  fontFamily: theme.fonts.fontMedium,
+                  color: "black",
+                  lineHeight: 25,
+                }}
+              >
+                Trip paid by customer wallet
+              </theme.Text>
 
-    //       //  <View style={{marginTop:-4}}>
-    //       //  <utils.vectorIcon.SimpleLineIcons name="credit-card" color="black" size={30} />
-    //       //  </View>
+              <theme.Text
+                style={{
+                  fontSize: 16,
+                  fontFamily: theme.fonts.fontMedium,
+                  color: "gray",
+                  marginTop: 10,
+                }}
+              >
+                You can view yours earnings in captain portal.
+              </theme.Text>
 
-    //       //  <View style={{marginLeft:10,width:"85%"}}>
+              <View
+                style={{
+                  marginTop: 5,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
+                <theme.Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  style={{
+                    fontSize: 15,
+                    fontFamily: theme.fonts.fontMedium,
+                    color: "gray",
+                    textTransform: "capitalize",
+                    lineHeight: 20,
+                    width: "30%",
+                  }}
+                >
+                  Total fare
+                </theme.Text>
 
-    //       //  <theme.Text numberOfLines={1} ellipsizeMode="tail" style={{fontSize:20,fontFamily:theme.fonts.fontMedium,color:"black",lineHeight:25}}>
-    //       //   Trip paid by card
-    //       //  </theme.Text>
+                <theme.Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  style={{
+                    fontSize: 16,
+                    lineHeight: 30,
+                    fontFamily: theme.fonts.fontMedium,
+                    color: "#383838",
+                    textAlign: "right",
+                    width: "65%",
+                  }}
+                >
+                  PKR {request.rent_afterBaseCharges}
+                </theme.Text>
+              </View>
+            </View>
+          </View>
 
-    //       //  <theme.Text  style={{fontSize:16,fontFamily:theme.fonts.fontMedium,color:"gray",marginTop:10}}>
-    //       //   You can view yours earnings in captain portal.
-    //       //  </theme.Text>
+          <View
+            style={{
+              backgroundColor: "white",
+              width: "100%",
+              borderRadius: 4,
+              padding: 10,
+              marginBottom: 10,
+              elevation: 5,
+            }}
+          >
+            <theme.Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={{
+                fontSize: 22,
+                fontFamily: theme.fonts.fontMedium,
+                color: "black",
+                textTransform: "capitalize",
+                lineHeight: 25,
+              }}
+            >
+              Rate {request.customer.fullname}
+            </theme.Text>
 
-    //       //  </View>
+            <StarRating
+              containerStyle={{ marginVertical: 15 }}
+              disabled={false}
+              maxStars={5}
+              starStyle={{ borderWidth: 0 }}
+              fullStarColor={theme.color.buttonLinerGC1}
+              rating={starCount}
+              selectedStar={(rating) => setstarCount(rating)}
+            />
+          </View>
 
-    //       // </View>
-
-    //       // <View style={{backgroundColor:"white",width:"100%",borderRadius:4,padding:10,marginBottom:10,elevation:5}}>
-    //       //  <theme.Text numberOfLines={1} ellipsizeMode="tail" style={{fontSize:22,fontFamily:theme.fonts.fontMedium,color:"black",textTransform:"capitalize",lineHeight:25}}>
-    //       //   Rate {request.name}
-    //       //  </theme.Text>
-
-    //       //  <StarRating
-    //       //          containerStyle={{marginVertical:15}}
-    //       //         disabled={false}
-    //       //         maxStars={5}
-    //       //         starStyle={{borderWidth:0}}
-    //       //         fullStarColor={theme.color.buttonLinerGC1}
-    //       //         rating={starCount}
-    //       //         selectedStar={(rating) => setstarCount(rating)}
-    //       //       />
-
-    //       // </View>
-
-    //       //       <TouchableOpacity onPress={()=>{clickFinish()}} style={[styles.BottomButton,{width:"100%"}]}>
-    //       //       <LinearGradient colors={[theme.color.buttonLinerGC1,theme.color.buttonLinerGC2]} style={styles.LinearGradient}>
-    //       //               <View style={[styles.ButtonRight,{width:"100%"}]}>
-    //       //               <Text style={styles.buttonText}>{msg}</Text>
-    //       //                </View>
-    //       //        </LinearGradient>
-    //       //        </TouchableOpacity>
-
-    //       // </View>
-
-    //           )
-
-    //    }
-    // else
+          <TouchableOpacity
+            onPress={() => {
+              onclickDoneRide("6");
+            }}
+            style={[styles.BottomButton, { width: "100%" }]}
+          >
+            <LinearGradient
+              colors={[theme.color.buttonLinerGC1, theme.color.buttonLinerGC2]}
+              style={styles.LinearGradient}
+            >
+              <View style={[styles.ButtonRight, { width: "100%" }]}>
+                <Text style={styles.buttonText}>{msg}</Text>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      );
+    }
     //  if colect cash in hand normal pay false
-    if (c == 4) {
+    else if (c == 4) {
       return (
         <View
           style={{
@@ -2093,7 +2418,7 @@ function MapContainer(props) {
 
           <TouchableOpacity
             onPress={() => {
-              onclickDoneRide();
+              onclickDoneRide("");
             }}
             style={[styles.BottomButton, { width: "100%" }]}
           >
@@ -2203,6 +2528,7 @@ function MapContainer(props) {
       <Modal
         isVisible={tripdetailmodal}
         backdropOpacity={0.6}
+        style={{ padding: 0, margin: 0 }}
         onRequestClose={() => {
           settripdetailmodal(!tripdetailmodal);
         }}

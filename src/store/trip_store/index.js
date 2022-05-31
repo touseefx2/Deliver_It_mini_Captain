@@ -44,6 +44,23 @@ export default class tripstore {
 
   @observable gro = false;
 
+  @persist("object") @observable waitingStart = "s";
+  @persist @observable wtasr = 0; //waiting time after start ride
+
+  @persist @observable wtasrInital = 0; //waiting time after start ride
+
+  @action setwaitingStart = (obj) => {
+    this.waitingStart = obj;
+  };
+
+  @action setwtasr = (obj) => {
+    this.wtasr = obj;
+  };
+
+  @action setwtasrInital = (obj) => {
+    this.wtasrInital = obj;
+  };
+
   @action setgro = (obj) => {
     //set trip
     this.gro = obj;
@@ -252,7 +269,7 @@ export default class tripstore {
 
             this.getAvgRate(req.customer._id);
             this.setrequest(req);
-            this.setnormalPaycash(req.rent);
+            this.setnormalPaycash(req.rent.toFixed());
 
             if (req.status.length > 0) {
               req.status.map((e, i, a) => {

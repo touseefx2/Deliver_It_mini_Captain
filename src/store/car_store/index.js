@@ -112,6 +112,9 @@ export default class carstore {
     const bodyData = false;
     const header = token;
 
+    console.log("Get car body : ", bodyData);
+    console.log("Get car header : ", header);
+
     // method, path, body, header
     db.api
       .apiCall("get", db.link.getCar + uid, bodyData, header)

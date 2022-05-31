@@ -16,11 +16,11 @@ import { Container, NativeBaseProvider } from "native-base";
 import RNAndroidLocationEnabler from "react-native-android-location-enabler";
 import Geolocation from "react-native-geolocation-service";
 import Modal from "react-native-modal";
-const ENDPOINT = "http://ec2-13-233-155-200.ap-south-1.compute.amazonaws.com";
+const ENDPOINT = "https://deliveritbackend.herokuapp.com";
 // import socketIOClient from "socket.io-client";
 // const socket = socketIOClient(ENDPOINT);
 import io from "socket.io-client";
-const socket = io(ENDPOINT);
+
 import db from "../../database/index";
 import GVs from "../../stores/Global_Var";
 import utilsS from "../../utilsS/index";
@@ -36,6 +36,7 @@ export default inject(
 )(observer(Home));
 
 function Home(props) {
+  const socket = io(ENDPOINT);
   const { user, authToken, setUser, setcl, cl, Logout, setonline } =
     props.userStore;
   const { cars, setCars } = props.carStore;
@@ -250,10 +251,12 @@ function Home(props) {
         enableHighAccuracy: true,
         timeout: 20000,
         maximumAge: 10000,
-        distanceFilter: 7,
+        distanceFilter: 10,
       }
     );
   };
+
+  console.log("uid : ", user._id);
 
   useEffect(() => {
     if (cl != "" && isInternet) {

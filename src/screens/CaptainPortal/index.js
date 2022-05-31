@@ -124,7 +124,7 @@ function CaptainPortal(props) {
     Logout();
   };
 
-  const getTotal = (sd, ed) => {
+  const getTotal = async (sd, ed) => {
     const bodyData = false;
     const header = authToken;
     const uid = user._id;
@@ -165,12 +165,13 @@ function CaptainPortal(props) {
       })
       .catch((e) => {
         settotal(false);
+        setloader(false);
         console.error("getTotalwithDate catch error : ", e);
         return;
       });
   };
 
-  const getPortal = (sd, ed) => {
+  const getPortal = async (sd, ed) => {
     const bodyData = false;
     const header = authToken;
     const uid = user._id;
@@ -208,31 +209,11 @@ function CaptainPortal(props) {
       })
       .catch((e) => {
         setportal(false);
+        setloader(false);
         console.error("getportalwithDate catch error : ", e);
         return;
       });
   };
-
-  // const getTrips = (sd, ed) => {
-  //   const bodyData = false;
-  //   const header = authToken;
-  //   const uid = user._id;
-  //   let route =
-  //     uid +
-  //     "&start=" +
-  //     moment(sd).format("Y-M-D") +
-  //     "&end=" +
-  //     moment(ed).format("Y-M-D");
-  //   console.log("get trip by date call");
-
-  //   hitApi(db.link.gettripbyUserwithDate + route, "get", null, header)
-  //     ?.then((resp) => {
-  //       console.log("get trip Response", resp.data);
-  //     })
-  //     .catch((err) => {
-  //       console.log("Error inget trip", err);
-  //     });
-  // };
 
   const getTrips = (sd, ed) => {
     setloader(true);
@@ -248,35 +229,37 @@ function CaptainPortal(props) {
       moment(sd).format("Y-M-D") +
       "&end=" +
       moment(ed).format("Y-M-D");
-    console.log("get trip by date call");
+    console.log("get trip by date call , ", route);
     // method, path, body, header
     db.api
       .apiCall("get", db.link.gettripbyUserwithDate + route, bodyData, header)
       .then((response) => {
-        setloader(false);
         setisserverErr(false);
+        setloader(false);
 
         console.log("getTripsbydate response : ", response);
 
         if (response.msg == "Invalid Token") {
           utils.AlertMessage("", response.msg);
           onLogout();
+
           return;
         }
 
         if (!response.data) {
           utils.AlertMessage("", response.message);
           setgettripOnce(false);
+
           return;
         }
 
         if (response.data) {
           getPortal(sd, ed);
           getTotal(sd, ed);
-          setgettripOnce(true);
 
           if (response.data == "No record found") {
             settrip([]);
+
             return;
           }
 
@@ -285,6 +268,7 @@ function CaptainPortal(props) {
 
             response.data.map((e, i, a) => {
               let c = e.status.filter((obj) => {
+                // console.log("obj status : ", obj.status);
                 return obj.status === "cancelled" || obj.status === "ended"
                   ? true
                   : false;
@@ -308,6 +292,8 @@ function CaptainPortal(props) {
             }
 
             settrip(tr);
+            setgettripOnce(true);
+
             return;
           }
         }
@@ -915,10 +901,10 @@ function CaptainPortal(props) {
       var date = moment(e.createdAt).format("ddd D MMM"); //9 july 2021
       let createdAt = date + ", " + t;
       let tid = e.t_id; //trip id
-      let rent = 0; //total amount in trip
+      let rent = 0; //total amount in trip before cut
 
       if (status == "ended") {
-        rent = e.rent;
+        rent = e.rent_afterBaseCharges || 0;
       }
 
       let statuss = status == "ended" ? "complete" : status;
@@ -1015,7 +1001,7 @@ function CaptainPortal(props) {
                   textTransform: "uppercase",
                 }}
               >
-                {rent}
+                {rent.toFixed()}
               </theme.Text>
             </View>
             {/* {e.normalPay==true&&(
@@ -1272,6 +1258,10 @@ function CaptainPortal(props) {
     acceptanceRate = ar;
     //get completion rate
     let cv = acceptedTrips - total.count_cancelled_trips_bycustomer;
+    console.log("at :  ", acceptedTrips);
+    console.log("cncl cstmr t :  ", total.count_cancelled_trips_bycustomer);
+    console.log("at -  cct :  ", cv);
+    console.log("totalcompletetrip :  ", totalcompletetrip);
     let tt = 0;
     if (cv > 0) {
       tt = 100 / cv; //acpt trip se minus ho gi wo trip jo user ne cancel ke
@@ -1315,7 +1305,7 @@ function CaptainPortal(props) {
           />
         )}
 
-        {!loader && trip && trip.length > 0 && portal && total && !isserverErr && (
+        {!loader && trip && trip.length > 0 && !isserverErr && (
           <View>
             {rendertripPayDetail()}
             {rendertripDetail()}

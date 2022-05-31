@@ -1,13 +1,13 @@
 //local link
-// const links = "http://10.7.148.97:3001/";
+// const links = "http://10.7.148.77:3001/";
 // const socket = "http://10.7.148.97:3001";
 
 //online link heroko
-// const links = "https://deliveritbackend.herokuapp.com/";
+const links = "https://deliveritbackend.herokuapp.com/";
 // const socket = "https://deliveritbackend.herokuapp.com";
 
 //online link  ec2
-const links = "http://ec2-13-233-155-200.ap-south-1.compute.amazonaws.com/";
+// const links = "http://ec2-13-233-155-200.ap-south-1.compute.amazonaws.com/";
 // const socket = "http://ec2-13-233-155-200.ap-south-1.compute.amazonaws.com";
 
 const login = "user/loginCaptain";
