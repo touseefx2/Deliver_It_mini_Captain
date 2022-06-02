@@ -398,7 +398,9 @@ function RegisterProfile(props) {
       >
         <SafeAreaView style={{ flex: 1 }}>
           <WebView
-            source={{ uri: "https://karblock.com/#/terms-and-conditions-app" }}
+            source={{
+              uri: "http://deliver-it-mini-website.s3-website.ap-south-1.amazonaws.com/privacy-policy-app",
+            }}
             javaScriptEnabled={true}
             onLoad={() => {
               setIsTermsLoad(true);

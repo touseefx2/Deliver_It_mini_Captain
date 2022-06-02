@@ -191,6 +191,7 @@ export default class userstore {
 
     try {
       imgArr.map((e, i, a) => {
+        console.log("img   : ", e.chk || "", "uri : ", e);
         const data = new FormData();
         const newFile = {
           uri: e.uri,
@@ -209,15 +210,15 @@ export default class userstore {
           .then((responseData) => {
             this.setdone(this.done + 1);
             if (e.chk == "profile") {
-              this.profile = responseData.locationArray[0].fileLocation;
+              image.uri = responseData.locationArray[0].fileLocation;
             } else if (e.chk == "cnicF") {
-              this.cnicfront = responseData.locationArray[0].fileLocation;
+              cf.uri = responseData.locationArray[0].fileLocation;
             } else if (e.chk == "cnicB") {
-              this.cnicback = responseData.locationArray[0].fileLocation;
+              cb.uri = responseData.locationArray[0].fileLocation;
             } else if (e.chk == "licenseF") {
-              this.licnesefront = responseData.locationArray[0].fileLocation;
+              lf.uri = responseData.locationArray[0].fileLocation;
             } else if (e.chk == "licenseB") {
-              this.licneseback = responseData.locationArray[0].fileLocation;
+              lb.uri = responseData.locationArray[0].fileLocation;
             }
             if (i == a.length - 1) {
               setTimeout(() => {
@@ -228,42 +229,19 @@ export default class userstore {
                   mobile_number: mobile,
                   email: email,
                   city: city,
-                  cnic_front_image: this.cnicfront,
-                  cnic_back_image: this.cnicback,
-                  profile_image: this.profile,
+                  cnic_front_image: cf.uri,
+                  cnic_back_image: cb.uri,
+                  profile_image: image.uri,
                   address: address,
-                  license_front_image: this.licnesefront,
-                  license_back_image: this.licneseback,
+                  license_front_image: lf.uri,
+                  license_back_image: lb.uri,
                   is_online: false,
                   registration_token: this.notificationToken,
                 };
 
-                console.log("register user body : ", body);
-                db.api
-                  .apiCall("post", db.link.OWNER_REG_EP, body, "")
-                  ?.then((response) => {
-                    console.log("register user resp : ", response);
-                    this.setRegLoading(false);
-
-                    if (response.token) {
-                      this.addUser(response.token, response.data);
-                      return;
-                    }
-
-                    if (response.message) {
-                      utils.AlertMessage("", response.message);
-                      return;
-                    }
-                  })
-                  .catch((e) => {
-                    console.error("register user catch error : ", e);
-                    this.setdone(0);
-                    this.setisAllImageUploadDone(false);
-                    this.settotal(0);
-                    this.setRegLoading(false);
-                  });
+                this.registerUser(body);
+                return;
               }, 1000);
-              return;
             }
           })
           .catch((err) => {
@@ -275,6 +253,34 @@ export default class userstore {
       console.log("add user catch error : ", e);
       this.regloading = false;
     }
+  }
+
+  @action.bound
+  registerUser(body) {
+    console.log("register user body : ", body);
+    db.api
+      .apiCall("post", db.link.OWNER_REG_EP, body, "")
+      ?.then((response) => {
+        console.log("register user resp : ", response);
+        this.setRegLoading(false);
+
+        if (response.token) {
+          this.addUser(response.token, response.data);
+          return;
+        }
+
+        if (response.message) {
+          utils.AlertMessage("", response.message);
+          return;
+        }
+      })
+      .catch((e) => {
+        console.error("register user catch error : ", e);
+        this.setdone(0);
+        this.setisAllImageUploadDone(false);
+        this.settotal(0);
+        this.setRegLoading(false);
+      });
   }
 
   @action.bound
@@ -315,6 +321,7 @@ export default class userstore {
         console.log("update user resp : ", response);
         this.setRegLoading(false);
         this.setLoadingFalse();
+        this.setdone(0);
         if (response.success) {
           this.setUser(response.data);
           // toast?.show("Success!");

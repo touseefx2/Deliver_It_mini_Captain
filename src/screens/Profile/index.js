@@ -728,13 +728,13 @@ function Profile(props) {
     }
 
     if (c == "licenseFV") {
-      setpv(licenseFrontImage.uri);
+      setpv(licenseFrontImage.uri || licenseFrontImage);
       setpvm(true);
       return;
     }
 
     if (c == "licenseBV") {
-      setpv(licenseBackImage.uri);
+      setpv(licenseBackImage.uri || licenseBackImage);
       setpvm(true);
       return;
     }
