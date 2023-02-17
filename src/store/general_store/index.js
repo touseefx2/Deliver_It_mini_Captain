@@ -19,8 +19,6 @@ export default class generalstore {
     this.isLocation = obj;
   };
 
-  @action setdeviceApi = (obj) => {};
-
   @action.bound
   setapiLevel(val) {
     this.apiLevel = val;

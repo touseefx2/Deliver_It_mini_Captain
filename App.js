@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-import NetInfo from "@react-native-community/netinfo";
 import Stack from "./src/navigation/index";
 import { AppState } from "react-native";
 import { screens } from "./src/screens/index";
@@ -12,6 +11,7 @@ import DeviceInfo from "react-native-device-info";
 import { ApplicationProvider } from "@ui-kitten/components";
 import * as eva from "@eva-design/eva";
 import ConnectivityManager from "react-native-connectivity-status";
+import NetInfo from "@react-native-community/netinfo";
 
 export default inject("userStore", "generalStore", "carStore")(observer(App));
 

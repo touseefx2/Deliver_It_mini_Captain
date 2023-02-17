@@ -20,13 +20,13 @@ const ENDPOINT = "https://deliveritbackend.herokuapp.com";
 // import socketIOClient from "socket.io-client";
 // const socket = socketIOClient(ENDPOINT);
 import io from "socket.io-client";
-
 import db from "../../database/index";
 import GVs from "../../stores/Global_Var";
 import utilsS from "../../utilsS/index";
 import { fcmService } from "../../services/Notification/FCMService";
 import utils from "../../utils/index";
 import theme from "../../themes/index";
+import store from "../../store/index";
 
 export default inject(
   "userStore",
@@ -255,8 +255,6 @@ function Home(props) {
       }
     );
   };
-
-  console.log("uid : ", user._id);
 
   useEffect(() => {
     if (cl != "" && isInternet) {

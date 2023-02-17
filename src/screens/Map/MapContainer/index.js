@@ -974,7 +974,7 @@ function MapContainer(props) {
     let latLng = `${dest.latitude},${dest.longitude}`;
 
     const url = Platform.select({
-      ios: `https://www.google.com/maps/?api=1&query=${label}&center=${lat},${long}`,
+      ios: `https://www.google.com/maps/?api=1&query=${label}&center=${latLng}`,
       android: `${scheme}${latLng}`,
     });
 
@@ -4071,17 +4071,17 @@ function MapContainer(props) {
       <MapView
         provider={PROVIDER_GOOGLE} // remove if not using Google Maps
         style={styless.map}
+        ref={mapRef}
+        onMapReady={() => setmr(true)}
         initialRegion={{
           latitude: 37.78825,
           longitude: -122.4324,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }}
-        ref={mapRef}
-        onMapReady={() => setmr(true)}
         showsBuildings={true}
-        showsCompass={false}
         zoomEnabled={true}
+        showsCompass={false}
         maxZoomLevel={100}
       >
         {cl != "" && currentMarker()}
